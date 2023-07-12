@@ -1,4 +1,5 @@
-FROM --platform=$TARGETPLATFORM jupyter/base-notebook:notebook-6.5.4 as base
+ARG NOTEBOOK_VERSION
+FROM --platform=$TARGETPLATFORM jupyter/base-notebook:notebook-$NOTEBOOK_VERSION as base
 # 更换Ubuntu的源
 USER root
 RUN sed -i "s@http://.*archive.ubuntu.com@https://mirrors.tuna.tsinghua.edu.cn@g" /etc/apt/sources.list
