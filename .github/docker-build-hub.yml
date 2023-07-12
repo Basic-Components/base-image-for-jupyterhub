@@ -1,4 +1,4 @@
-name: "build images for master"
+name: "build images for jupyter hub"
 
 on:
   workflow_dispatch:
