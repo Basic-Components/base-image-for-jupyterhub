@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       notebook_version:
-          description: 'jupyterhub version'
+          description: 'notebook version'
           required: false
           default: '6.5.4'
 jobs:
