@@ -3,10 +3,6 @@ name: "build images for master"
 on:
   workflow_call:
     inputs:
-      # tag:
-      #     description: 'image tag'
-      #     required: true
-      #     default: 'Mona the Octocat'
       jupyterhub_version:
           description: 'jupyterhub version'
           required: false
@@ -23,7 +19,7 @@ jobs:
         run: |
           DOCKER_IMAGE=hsz1273327/jupyterhub-for-standalone
           SHORTREF=${GITHUB_SHA::8}
-          TAGS="${DOCKER_IMAGE}:${{ inputs.image }},${DOCKER_IMAGE}:${SHORTREF},${DOCKER_IMAGE}:latest"
+          TAGS="${DOCKER_IMAGE}:${{ inputs.jupyterhub_version }},${DOCKER_IMAGE}:${SHORTREF},${DOCKER_IMAGE}:latest"
           # Set output parameters.
           echo ::set-output name=tags::${TAGS}
           echo ::set-output name=docker_image::${DOCKER_IMAGE}
