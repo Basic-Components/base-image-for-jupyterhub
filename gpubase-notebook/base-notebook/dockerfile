@@ -42,7 +42,7 @@ USER ${NB_UID}
 ENV NOTEBOOK_VERSION=${NOTEBOOK_VERSION}
 WORKDIR /tmp
 RUN mamba install --yes \
-    'notebook==${NOTEBOOK_VERSION}' \
+    notebook==$NOTEBOOK_VERSION \
     'jupyterhub' \
     'jupyterlab' && \
     jupyter notebook --generate-config && \
