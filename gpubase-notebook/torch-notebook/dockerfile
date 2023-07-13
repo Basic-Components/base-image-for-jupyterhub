@@ -11,7 +11,7 @@ ENV PYTORCH_VERSION=${PYTORCH_VERSION}
 
 RUN mamba install --channel conda-forge pygraphviz pydot lxml cython
 
-RUN pip install torch== torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+RUN pip install 'torch==${PYTORCH_VERSION}' torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
 RUN pip --no-cache-dir install --upgrade pip
 RUN pip --no-cache-dir install ipywidgets
