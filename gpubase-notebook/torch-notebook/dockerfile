@@ -10,7 +10,7 @@ ARG PYTORCH_VERSION
 ARG CU
 ENV PYTORCH_VERSION=${PYTORCH_VERSION}
 ENV CU=${CU}
-RUN pip install torch==$PYTORCH_VERSION torchvision torchaudio --index-url https://download.pytorch.org/whl/cu$CU
+RUN pip install --no-cache-dir torch==$PYTORCH_VERSION torchvision torchaudio --index-url https://download.pytorch.org/whl/cu$CU
 # RUN mamba install --channel conda-forge pygraphviz pydot lxml cython
 # RUN pip --no-cache-dir install --upgrade pip
 # RUN pip --no-cache-dir install ipywidgets
