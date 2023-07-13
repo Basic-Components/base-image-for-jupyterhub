@@ -24,7 +24,7 @@ jobs:
       - name: Prepare
         id: prep
         run: |
-          CU= ${{steps.split.outputs._0}}${{ steps.split.outputs._1 }}
+          CU="${{steps.split.outputs._0}}${{ steps.split.outputs._1 }}"
           echo ::set-output name=cu::${CU}
 
   # docker-build-torch-notebook:
