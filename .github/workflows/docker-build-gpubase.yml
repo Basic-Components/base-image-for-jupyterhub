@@ -19,6 +19,14 @@ on:
         description: 'notebook version'
         required: false
         default: '6.5.4'
+      jupyterhub_version:
+        description: 'jupyterhub version'
+        required: false
+        default: '4.0.1'
+      jupyterlab_version:
+        description: 'jupyterlab version'
+        required: false
+        default: '4.0.2'
       pytorch_version:
         description: 'pytorch version'
         required: false
@@ -111,6 +119,8 @@ jobs:
             CUDNN_VERSION=${{ inputs.cudnn_version }}
             UBUNTU_VERSION=${{ inputs.ubuntu_version }}
             NOTEBOOK_VERSION=${{ inputs.notebook_version }}
+            JUPYTERHUB_VERSION=${{ inputs.jupyterhub_version }}
+            JUPYTERLAB_VERSION=${{ inputs.jupyterlab_version}}
           tags: ${{ steps.prep.outputs.tags }}
 
   docker-build-torch-notebook:

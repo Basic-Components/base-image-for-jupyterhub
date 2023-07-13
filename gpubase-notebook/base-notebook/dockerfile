@@ -39,12 +39,16 @@ USER ${NB_UID}
 # Do all this in a single RUN command to avoid duplicating all of the
 # files across image layers when the permissions change
 ARG NOTEBOOK_VERSION
+ARG JUPYTERHUB_VERSION
+ARG JUPYTERLAB_VERSION
 ENV NOTEBOOK_VERSION=${NOTEBOOK_VERSION}
+ENV JUPYTERHUB_VERSION=${JUPYTERHUB_VERSION}
+ENV JUPYTERLAB_VERSION=${JUPYTERLAB_VERSION}
 WORKDIR /tmp
 RUN mamba install --yes \
     notebook==$NOTEBOOK_VERSION \
-    'jupyterhub' \
-    'jupyterlab' && \
+    jupyterhub==$JUPYTERHUB_VERSION \
+    jupyterlab==$JUPYTERLAB_VERSION && \
     jupyter notebook --generate-config && \
     mamba clean --all -f -y && \
     npm cache clean --force && \
