@@ -16,17 +16,17 @@ on:
         required: false
         default: "22.04"
       notebook_version:
-        description: "notebook version"
+        description: 'notebook version'
         required: false
-        default: "6.5.4"
+        default: '6.5.4'
       pytorch_version:
-        description: "pytorch version"
+        description: 'pytorch version'
         required: false
-        default: "2.0.1"
+        default: '2.0.1'
       tensorflow_version:
-        description: "tensorflow version"
+        description: 'tensorflow version'
         required: false
-        default: "2.13.0"
+        default: '2.13.0'
 jobs:
   docker-build-docker-stack-foundation:
     runs-on: ubuntu-latest
@@ -63,18 +63,17 @@ jobs:
           file: dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          build-args:
-            [
-              "CUDA_VERSION=${{ inputs.cuda_version }}",
-              "CUDNN_VERSION=${{ inputs.cudnn_version }}",
-              "UBUNTU_VERSION=${{ inputs.ubuntu_version }}",
-            ]
+          build-args: |
+            CUDA_VERSION=${{ inputs.cuda_version }}
+            CUDNN_VERSION=${{ inputs.cudnn_version }}
+            UBUNTU_VERSION=${{ inputs.ubuntu_version }}
           tags: ${{ steps.prep.outputs.tags }}
-
+  
   docker-build-base-notebook:
     runs-on: ubuntu-latest
     needs: docker-build-docker-stack-foundation
     steps:
+      
       - name: Checkout
         uses: actions/checkout@v2
       - name: Prepare
@@ -107,7 +106,11 @@ jobs:
           file: dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          build-args: CUDA_VERSION=${{ inputs.cuda_version }},CUDNN_VERSION=${{ inputs.cudnn_version }},UBUNTU_VERSION=${{ inputs.ubuntu_version }},NOTEBOOK_VERSION=${{ inputs.notebook_version }}
+          build-args: |
+            CUDA_VERSION=${{ inputs.cuda_version }}
+            CUDNN_VERSION=${{ inputs.cudnn_version }}
+            UBUNTU_VERSION=${{ inputs.ubuntu_version }}
+            NOTEBOOK_VERSION=${{ inputs.notebook_version }}
           tags: ${{ steps.prep.outputs.tags }}
 
   docker-build-torch-notebook:
@@ -118,7 +121,7 @@ jobs:
         id: split
         with:
           msg: ${{ inputs.cuda_version }}
-          separator: "."
+          separator: '.'
       - name: Checkout
         uses: actions/checkout@v2
       - name: Prepare
@@ -153,7 +156,13 @@ jobs:
           file: dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          build-args: CUDA_VERSION=${{ inputs.cuda_version }},CUDNN_VERSION=${{ inputs.cudnn_version }},UBUNTU_VERSION=${{ inputs.ubuntu_version }},NOTEBOOK_VERSION=${{ inputs.notebook_version }},PYTORCH_VERSION=${{ inputs.pytorch_version }},CU=${{ steps.prep.outputs.cu }}
+          build-args: |
+            CUDA_VERSION=${{ inputs.cuda_version }}
+            CUDNN_VERSION=${{ inputs.cudnn_version }}
+            UBUNTU_VERSION=${{ inputs.ubuntu_version }}
+            NOTEBOOK_VERSION=${{ inputs.notebook_version }}
+            PYTORCH_VERSION=${{ inputs.pytorch_version }}
+            CU=${{ steps.prep.outputs.cu }}
           tags: ${{ steps.prep.outputs.tags }}
 
   docker-build-tf-notebook:
@@ -164,7 +173,7 @@ jobs:
         id: split
         with:
           msg: ${{ inputs.cuda_version }}
-          separator: "."
+          separator: '.'
       - name: Checkout
         uses: actions/checkout@v2
       - name: Prepare
@@ -199,5 +208,11 @@ jobs:
           file: dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          build-args: CUDA_VERSION=${{ inputs.cuda_version }},CUDNN_VERSION=${{ inputs.cudnn_version }},UBUNTU_VERSION=${{ inputs.ubuntu_version }},NOTEBOOK_VERSION=${{ inputs.notebook_version }},TENSORFLOW_VERSION=${{ inputs.tensorflow_version }},CU=${{ steps.prep.outputs.cu }}
+          build-args: |
+            CUDA_VERSION=${{ inputs.cuda_version }}
+            CUDNN_VERSION=${{ inputs.cudnn_version }}
+            UBUNTU_VERSION=${{ inputs.ubuntu_version }}
+            NOTEBOOK_VERSION=${{ inputs.notebook_version }}
+            TENSORFLOW_VERSION=${{ inputs.tensorflow_version }}
+            CU=${{ steps.prep.outputs.cu }}
           tags: ${{ steps.prep.outputs.tags }}
