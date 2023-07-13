@@ -1,7 +1,11 @@
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
 ARG OWNER=hsz1273327
-ARG BASE_CONTAINER=$OWNER/docker-stacks-foundation-cuda:latest
+ARG CUDA_VERSION
+ARG CUDNN_VERSION
+ARG UBUNTU_VERSION
+ARG NOTEBOOK_VERSION
+ARG BASE_CONTAINER=${OWNER}/gpu-docker-stacks-foundation:cuda${CUDA_VERSION}-cudnn${CUDNN_VERSION}-ubuntu${UBUNTU_VERSION}
 FROM --platform=$TARGETPLATFORM $BASE_CONTAINER
 
 # Fix: https://github.com/hadolint/hadolint/wiki/DL4006
@@ -35,9 +39,10 @@ USER ${NB_UID}
 # Correct permissions
 # Do all this in a single RUN command to avoid duplicating all of the
 # files across image layers when the permissions change
+ENV NOTEBOOK_VERSION=${NOTEBOOK_VERSION}
 WORKDIR /tmp
 RUN mamba install --yes \
-    'notebook' \
+    'notebook==${NOTEBOOK_VERSION}' \
     'jupyterhub' \
     'jupyterlab' && \
     jupyter notebook --generate-config && \
