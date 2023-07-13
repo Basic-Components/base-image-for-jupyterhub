@@ -24,7 +24,7 @@ on:
           required: false
           default: '2.0.1'
       tensorflow_version:
-          description: 'pytorch version'
+          description: 'tensorflow version'
           required: false
           default: '2.13.0'
 jobs:
