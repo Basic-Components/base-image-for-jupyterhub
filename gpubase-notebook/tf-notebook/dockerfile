@@ -10,14 +10,15 @@ FROM --platform=$TARGETPLATFORM $BASE_CONTAINER
 ARG TENSORFLOW_VERSION
 ARG CU
 ENV TENSORFLOW_VERSION=${TENSORFLOW_VERSION}
-ENV CU=${CU}
 
-RUN pip --no-cache-dir install nvidia-pyindex
-RUN pip --no-cache-dir install nvidia-cudnn-cu${CU} tensorflow==$TENSORFLOW_VERSION
-RUN mkdir -p $CONDA_DIR/etc/conda/activate.d
-RUN echo 'CUDNN_PATH=$(dirname $(python -c "import nvidia.cudnn;print(nvidia.cudnn.__file__)"))' >> $CONDA_DIR/etc/conda/activate.d/env_vars.sh
-RUN echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_DIR/lib/:$CUDNN_PATH/lib' >> $CONDA_DIR/etc/conda/activate.d/env_vars.sh
-RUN source $CONDA_DIR/etc/conda/activate.d/env_vars.sh
+# RUN pip --no-cache-dir install nvidia-pyindex
+# RUN pip --no-cache-dir install nvidia-cudnn-cu${CU} tensorflow==$TENSORFLOW_VERSION
+# RUN mkdir -p $CONDA_DIR/etc/conda/activate.d
+# RUN echo 'CUDNN_PATH=$(dirname $(python -c "import nvidia.cudnn;print(nvidia.cudnn.__file__)"))' >> $CONDA_DIR/etc/conda/activate.d/env_vars.sh
+# RUN echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_DIR/lib/:$CUDNN_PATH/lib' >> $CONDA_DIR/etc/conda/activate.d/env_vars.sh
+# RUN source $CONDA_DIR/etc/conda/activate.d/env_vars.sh
+
+RUN pip --no-cache-dir install tensorflow==$TENSORFLOW_VERSION
 
 # RUN mamba install -c conda-forge cudatoolkit=11.8.0 pygraphviz pydot lxml cython
 # RUN pip --no-cache-dir install --upgrade pip

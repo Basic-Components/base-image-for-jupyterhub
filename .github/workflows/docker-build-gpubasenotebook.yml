@@ -135,5 +135,4 @@ jobs:
             UBUNTU_VERSION=${{ inputs.ubuntu_version }}
             NOTEBOOK_VERSION=${{ inputs.notebook_version }}
             TENSORFLOW_VERSION=${{ inputs.tensorflow_version }}
-            CU=${{ steps.prep.outputs.cu }}
           tags: ${{ steps.prep.outputs.tags }}

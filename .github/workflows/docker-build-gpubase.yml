@@ -192,11 +192,9 @@ jobs:
           DOCKER_IMAGE=hsz1273327/gpu-tf-notebook
           SHORTREF=${GITHUB_SHA::8}
           TAGS="${DOCKER_IMAGE}:tf${{ inputs.tensorflow_version }}-cuda${{ inputs.cuda_version }}-notebook${{ inputs.notebook_version }},${DOCKER_IMAGE}:${SHORTREF},${DOCKER_IMAGE}:latest"
-          CU="${{steps.split.outputs._0}}"
           # Set output parameters.
           echo ::set-output name=tags::${TAGS}
           echo ::set-output name=docker_image::${DOCKER_IMAGE}
-          echo ::set-output name=cu::${CU}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@master
         with:
@@ -224,5 +222,4 @@ jobs:
             UBUNTU_VERSION=${{ inputs.ubuntu_version }}
             NOTEBOOK_VERSION=${{ inputs.notebook_version }}
             TENSORFLOW_VERSION=${{ inputs.tensorflow_version }}
-            CU=${{ steps.prep.outputs.cu }}
           tags: ${{ steps.prep.outputs.tags }}
