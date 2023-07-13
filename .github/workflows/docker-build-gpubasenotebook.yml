@@ -1,4 +1,4 @@
-name: "build images for gpu based notebook"
+name: "test build images for gpu based notebook"
 
 on:
   workflow_dispatch:
