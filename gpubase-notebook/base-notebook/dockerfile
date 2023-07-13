@@ -45,7 +45,7 @@ ENV NOTEBOOK_VERSION=${NOTEBOOK_VERSION}
 ENV JUPYTERHUB_VERSION=${JUPYTERHUB_VERSION}
 ENV JUPYTERLAB_VERSION=${JUPYTERLAB_VERSION}
 WORKDIR /tmp
-RUN mamba install --yes \
+RUN mamba install  -c conda-forge --yes \
     notebook==$NOTEBOOK_VERSION \
     jupyterhub==$JUPYTERHUB_VERSION \
     jupyterlab==$JUPYTERLAB_VERSION && \
