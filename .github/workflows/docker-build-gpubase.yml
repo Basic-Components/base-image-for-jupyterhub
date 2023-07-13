@@ -22,8 +22,11 @@ on:
       pytorch_version:
           description: 'pytorch version'
           required: false
-          default: '6.5.4'
-        
+          default: '2.0.1'
+      tensorflow_version:
+          description: 'pytorch version'
+          required: false
+          default: '2.13.0'
 jobs:
   docker-build-docker-stack-foundation:
     runs-on: ubuntu-latest
@@ -67,11 +70,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: docker-build-docker-stack-foundation
     steps:
-      - uses: jungwinter/split@v2
-        id: split
-        with:
-          msg: ${{ inputs.cuda_version }}
-          separator: '.'
+      
       - name: Checkout
         uses: actions/checkout@v2
       - name: Prepare
@@ -83,8 +82,6 @@ jobs:
           # Set output parameters.
           echo ::set-output name=tags::${TAGS}
           echo ::set-output name=docker_image::${DOCKER_IMAGE}
-          CU= ${{steps.split.outputs._0}}${{ steps.split.outputs._1 }}
-          echo ::set-output name=cu::${CU}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@master
         with:
@@ -109,41 +106,94 @@ jobs:
           build-args: CUDA_VERSION=${{ inputs.cuda_version }},CUDNN_VERSION=${{ inputs.cudnn_version }},UBUNTU_VERSION=${{ inputs.ubuntu_version }},NOTEBOOK_VERSION=${{ inputs.notebook_version }}
           tags: ${{ steps.prep.outputs.tags }}
 
-  # docker-build-torch-notebook:
-  #   runs-on: ubuntu-latest
-  #   needs: docker-build-base-notebook
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v2
-  #     - name: Prepare
-  #       id: prep
-  #       run: |
-  #         DOCKER_IMAGE=hsz1273327/gpu-torch-notebook
-  #         SHORTREF=${GITHUB_SHA::8}
-  #         TAGS="${DOCKER_IMAGE}:pytorch${{ inputs.pytorch_version }}-cuda${{ inputs.cuda_version }}-notebook${{ inputs.notebook_version }},${DOCKER_IMAGE}:${SHORTREF},${DOCKER_IMAGE}:latest"
-  #         # Set output parameters.
-  #         echo ::set-output name=tags::${TAGS}
-  #         echo ::set-output name=docker_image::${DOCKER_IMAGE}
-  #     - name: Set up QEMU
-  #       uses: docker/setup-qemu-action@master
-  #       with:
-  #         platforms: all
-  #     - name: Set up Docker Buildx
-  #       id: buildx
-  #       uses: docker/setup-buildx-action@master
-  #     - name: Login to DockerHub
-  #       if: github.event_name != 'pull_request'
-  #       uses: docker/login-action@v1
-  #       with:
-  #         username: ${{ secrets.DOCKER_HUB_USER }}
-  #         password: ${{ secrets.DOCKER_HUB_PWD }}
-  #     - name: Build
-  #       uses: docker/build-push-action@v2
-  #       with:
-  #         builder: ${{ steps.buildx.outputs.name }}
-  #         context: "{{defaultContext}}:gpubase-notebook/torch-notebook"
-  #         file: dockerfile
-  #         platforms: linux/amd64,linux/arm64
-  #         push: true
-  #         build-args: CUDA_VERSION=${{ inputs.cuda_version }},CUDNN_VERSION=${{ inputs.cudnn_version }},UBUNTU_VERSION=${{ inputs.ubuntu_version }},NOTEBOOK_VERSION=${{ inputs.notebook_version }}
-  #         tags: ${{ steps.prep.outputs.tags }}
+  docker-build-torch-notebook:
+    runs-on: ubuntu-latest
+    needs: docker-build-base-notebook
+    steps:
+      - uses: jungwinter/split@v2
+        id: split
+        with:
+          msg: ${{ inputs.cuda_version }}
+          separator: '.'
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Prepare
+        id: prep
+        run: |
+          DOCKER_IMAGE=hsz1273327/gpu-torch-notebook
+          SHORTREF=${GITHUB_SHA::8}
+          TAGS="${DOCKER_IMAGE}:pytorch${{ inputs.pytorch_version }}-cuda${{ inputs.cuda_version }}-notebook${{ inputs.notebook_version }},${DOCKER_IMAGE}:${SHORTREF},${DOCKER_IMAGE}:latest"
+          CU="${{steps.split.outputs._0}}${{ steps.split.outputs._1 }}"
+          # Set output parameters.
+          echo ::set-output name=tags::${TAGS}
+          echo ::set-output name=docker_image::${DOCKER_IMAGE}
+          echo ::set-output name=cu::${CU}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@master
+        with:
+          platforms: all
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@master
+      - name: Login to DockerHub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PWD }}
+      - name: Build
+        uses: docker/build-push-action@v2
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          context: "{{defaultContext}}:gpubase-notebook/torch-notebook"
+          file: dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: CUDA_VERSION=${{ inputs.cuda_version }},CUDNN_VERSION=${{ inputs.cudnn_version }},UBUNTU_VERSION=${{ inputs.ubuntu_version }},NOTEBOOK_VERSION=${{ inputs.notebook_version }},PYTORCH_VERSION=${{ inputs.pytorch_version }},CU=${{ steps.prep.outputs.cu }}
+          tags: ${{ steps.prep.outputs.tags }}
+
+  docker-build-tf-notebook:
+    runs-on: ubuntu-latest
+    needs: docker-build-base-notebook
+    steps:
+      - uses: jungwinter/split@v2
+        id: split
+        with:
+          msg: ${{ inputs.cuda_version }}
+          separator: '.'
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Prepare
+        id: prep
+        run: |
+          DOCKER_IMAGE=hsz1273327/gpu-tf-notebook
+          SHORTREF=${GITHUB_SHA::8}
+          TAGS="${DOCKER_IMAGE}:tf${{ inputs.tensorflow_version }}-cuda${{ inputs.cuda_version }}-notebook${{ inputs.notebook_version }},${DOCKER_IMAGE}:${SHORTREF},${DOCKER_IMAGE}:latest"
+          CU="${{steps.split.outputs._0}}"
+          # Set output parameters.
+          echo ::set-output name=tags::${TAGS}
+          echo ::set-output name=docker_image::${DOCKER_IMAGE}
+          echo ::set-output name=cu::${CU}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@master
+        with:
+          platforms: all
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@master
+      - name: Login to DockerHub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PWD }}
+      - name: Build
+        uses: docker/build-push-action@v2
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          context: "{{defaultContext}}:gpubase-notebook/tf-notebook"
+          file: dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: CUDA_VERSION=${{ inputs.cuda_version }},CUDNN_VERSION=${{ inputs.cudnn_version }},UBUNTU_VERSION=${{ inputs.ubuntu_version }},NOTEBOOK_VERSION=${{ inputs.notebook_version }},TENSORFLOW_VERSION=${{ inputs.tensorflow_version }},CU=${{ steps.prep.outputs.cu }}
+          tags: ${{ steps.prep.outputs.tags }}
