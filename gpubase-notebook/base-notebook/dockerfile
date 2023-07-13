@@ -4,7 +4,6 @@ ARG OWNER=hsz1273327
 ARG CUDA_VERSION
 ARG CUDNN_VERSION
 ARG UBUNTU_VERSION
-ARG NOTEBOOK_VERSION
 ARG BASE_CONTAINER=${OWNER}/gpu-docker-stacks-foundation:cuda${CUDA_VERSION}-cudnn${CUDNN_VERSION}-ubuntu${UBUNTU_VERSION}
 FROM --platform=$TARGETPLATFORM $BASE_CONTAINER
 
@@ -39,6 +38,7 @@ USER ${NB_UID}
 # Correct permissions
 # Do all this in a single RUN command to avoid duplicating all of the
 # files across image layers when the permissions change
+ARG NOTEBOOK_VERSION
 ENV NOTEBOOK_VERSION=${NOTEBOOK_VERSION}
 WORKDIR /tmp
 RUN mamba install --yes \
