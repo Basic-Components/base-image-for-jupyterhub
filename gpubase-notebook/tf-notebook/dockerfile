@@ -8,7 +8,6 @@ ARG BASE_CONTAINER=${OWNER}/gpu-base-notebook:cuda${CUDA_VERSION}-cudnn${CUDNN_V
 FROM --platform=$TARGETPLATFORM $BASE_CONTAINER
 
 ARG TENSORFLOW_VERSION
-ARG CU
 ENV TENSORFLOW_VERSION=${TENSORFLOW_VERSION}
 
 # RUN pip --no-cache-dir install nvidia-pyindex
@@ -20,25 +19,26 @@ ENV TENSORFLOW_VERSION=${TENSORFLOW_VERSION}
 
 RUN pip --no-cache-dir install tensorflow==$TENSORFLOW_VERSION
 
-# RUN mamba install -c conda-forge cudatoolkit=11.8.0 pygraphviz pydot lxml cython
-# RUN pip --no-cache-dir install --upgrade pip
-# RUN pip --no-cache-dir install ipywidgets
-# RUN pip --no-cache-dir install widgetsnbextension
-# RUN pip --no-cache-dir install matplotlib
-# RUN pip --no-cache-dir install seaborn
+RUN mamba install --channel conda-forge fastparquet pyarrow fastavro pygraphviz pydot lxml cython opencv-python Pillow
 
-# RUN pip --no-cache-dir install pandas
-# RUN pip --no-cache-dir install pyarrow
-# RUN pip --no-cache-dir install thefuzz
-# RUN pip --no-cache-dir install pyod
-# RUN pip --no-cache-dir install scipy
-# RUN pip --no-cache-dir install scikit-learn
-# RUN pip --no-cache-dir install scikit-image
-# RUN pip --no-cache-dir install skforecast
-# RUN pip --no-cache-dir install sympy
-# RUN pip --no-cache-dir install statsmodels
-# RUN pip --no-cache-dir install pingouin
-# RUN pip --no-cache-dir install mpmath
-# RUN pip --no-cache-dir install networkx
+RUN pip --no-cache-dir install --upgrade pip
+RUN pip --no-cache-dir install ipywidgets
+RUN pip --no-cache-dir install widgetsnbextension
+RUN pip --no-cache-dir install python-snappy
+RUN pip --no-cache-dir install lz4
+RUN pip --no-cache-dir install boto3
+RUN pip --no-cache-dir install s3fs
+RUN pip --no-cache-dir install psycopg2-binary
+RUN pip --no-cache-dir install peewee
+RUN pip --no-cache-dir install SQLAlchemy
+RUN pip --no-cache-dir install matplotlib
+RUN pip --no-cache-dir install seaborn
+
+RUN pip --no-cache-dir install pandas
+RUN pip --no-cache-dir install thefuzz
+RUN pip --no-cache-dir install pyod
+RUN pip --no-cache-dir install scipy
+RUN pip --no-cache-dir install scikit-learn
+RUN pip --no-cache-dir install scikit-image
 
 # COPY tf.ipynb /home/jovyan/work/examples/tf.ipynb

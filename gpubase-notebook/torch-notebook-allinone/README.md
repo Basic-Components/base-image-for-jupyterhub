@@ -1,6 +1,8 @@
-# 小规模数据处理使用的镜像
+# torch-notebook-allinone
 
-数据来源限定为pg和s3协议的对象存储.本镜像提供如下包:
+使用[nvidia/cuda](https://hub.docker.com/r/nvidia/cuda)作为基镜像,安装了pytorch的notebook镜像
+
+本镜像除了pytorch外还提供如下包:
 
 >基础工具
 
@@ -62,3 +64,7 @@
 + scikit-image
 + opencv-python
 + Pillow
+
+> 大数据计算
+
++ dask

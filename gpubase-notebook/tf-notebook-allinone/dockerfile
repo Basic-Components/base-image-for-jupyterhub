@@ -1,0 +1,17 @@
+ARG OWNER=hsz1273327
+ARG CUDA_VERSION
+ARG NOTEBOOK_VERSION
+ARG TENSORFLOW_VERSION
+ARG BASE_CONTAINER=${OWNER}/gpu-tf-notebook:tf${TENSORFLOW_VERSION}-cuda${CUDA_VERSION}-notebook${NOTEBOOK_VERSION}
+FROM --platform=$TARGETPLATFORM $BASE_CONTAINER
+
+RUN mamba install --channel conda-forge dask xgboost lightgbm catboost
+
+RUN pip --no-cache-dir install mpmath
+RUN pip --no-cache-dir install skforecast
+RUN pip --no-cache-dir install sympy
+RUN pip --no-cache-dir install statsmodels
+RUN pip --no-cache-dir install pingouin
+RUN pip --no-cache-dir install networkx
+
+# COPY torch.ipynb /home/jovyan/work/examples/torch.ipynb

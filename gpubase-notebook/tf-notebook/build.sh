@@ -1,1 +1,1 @@
-docker buildx build --push --platform=linux/amd64,linux/arm64 -t hsz1273327/tf-notebook-cuda:notebook6.5.4-tf2.12.0-cu118 -t hsz1273327/tf-notebook-cuda:latest .
+docker buildx build --push --platform=linux/amd64,linux/arm64 -t hsz1273327/gpu-tf-notebook:tf2.12.0-cuda11.8.0-notebook6.5.4 -t hsz1273327/gpu-tf-notebook:latest .
