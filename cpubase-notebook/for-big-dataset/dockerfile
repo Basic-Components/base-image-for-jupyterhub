@@ -1,5 +1,5 @@
 ARG NOTEBOOK_VERSION
-FROM --platform=$TARGETPLATFORM jupyter/small-dataset-notebook:notebook-$NOTEBOOK_VERSION as base
+FROM --platform=$TARGETPLATFORM hsz1273327/small-dataset-notebook:notebook-$NOTEBOOK_VERSION as base
 # 安装需要的库
 RUN conda install --channel conda-forge dask
 
