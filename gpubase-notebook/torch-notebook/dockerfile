@@ -12,7 +12,7 @@ ENV PYTORCH_VERSION=${PYTORCH_VERSION}
 ENV CU=${CU}
 RUN pip install --no-cache-dir torch==$PYTORCH_VERSION torchvision torchaudio --index-url https://download.pytorch.org/whl/cu$CU
 
-RUN mamba install --channel conda-forge fastparquet pyarrow fastavro pygraphviz pydot lxml cython opencv-python Pillow
+RUN mamba install --channel conda-forge fastparquet pyarrow fastavro pygraphviz pydot lxml cython Pillow
 
 RUN pip --no-cache-dir install --upgrade pip
 RUN pip --no-cache-dir install ipywidgets
@@ -33,7 +33,7 @@ RUN pip --no-cache-dir install pyod
 RUN pip --no-cache-dir install scipy
 RUN pip --no-cache-dir install scikit-learn
 RUN pip --no-cache-dir install scikit-image
-
+RUN pip --no-cache-dir install opencv-python
 
 
 # COPY torch.ipynb /home/jovyan/work/examples/torch.ipynb

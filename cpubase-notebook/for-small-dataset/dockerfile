@@ -16,7 +16,7 @@ USER ${NB_UID}
 # # 更换pip源
 # COPY --chown="${NB_UID}:${NB_GID}" pip.conf "${HOME}/.pip/pip.conf"
 # 安装需要的库
-RUN conda install --channel conda-forge fastparquet pyarrow fastavro pygraphviz pydot lxml cython xgboost lightgbm catboost opencv-python Pillow
+RUN conda install --channel conda-forge fastparquet pyarrow fastavro pygraphviz pydot lxml cython xgboost lightgbm catboost Pillow
 
 RUN pip --no-cache-dir install --upgrade pip
 RUN pip --no-cache-dir install ipywidgets
@@ -43,6 +43,7 @@ RUN pip --no-cache-dir install sympy
 RUN pip --no-cache-dir install statsmodels
 RUN pip --no-cache-dir install pingouin
 RUN pip --no-cache-dir install networkx
+RUN pip --no-cache-dir install opencv-python
 
 # # 复制例子
 # COPY conntodata.ipynb /home/jovyan/work/examples/conntodata.ipynb
