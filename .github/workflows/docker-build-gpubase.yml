@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
+        uses: jlumbroso/free-disk-space@v1.2.0
         with:
           # this might remove tools that are actually needed,
           # when set to "true" but frees about 6 GB
@@ -88,7 +88,7 @@ jobs:
     needs: docker-build-docker-stack-foundation
     steps:
       - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
+        uses: jlumbroso/free-disk-space@v1.2.0
         with:
           # this might remove tools that are actually needed,
           # when set to "true" but frees about 6 GB
@@ -139,7 +139,7 @@ jobs:
     needs: docker-build-base-notebook
     steps:
       - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
+        uses: jlumbroso/free-disk-space@v1.2.0
         with:
           # this might remove tools that are actually needed,
           # when set to "true" but frees about 6 GB
@@ -197,7 +197,7 @@ jobs:
     needs: docker-build-torch-notebook
     steps:
       - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
+        uses: jlumbroso/free-disk-space@v1.2.0
         with:
           # this might remove tools that are actually needed,
           # when set to "true" but frees about 6 GB
@@ -252,7 +252,7 @@ jobs:
     needs: docker-build-base-notebook
     steps:
       - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
+        uses: jlumbroso/free-disk-space@v1.2.0
         with:
           # this might remove tools that are actually needed,
           # when set to "true" but frees about 6 GB
@@ -307,7 +307,7 @@ jobs:
     needs: docker-build-tf-notebook
     steps:
       - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
+        uses: jlumbroso/free-disk-space@v1.2.0
         with:
           # this might remove tools that are actually needed,
           # when set to "true" but frees about 6 GB
