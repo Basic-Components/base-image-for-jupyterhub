@@ -93,67 +93,67 @@ c.JupyterHub.init_spawners_timeout = int(os.environ.get("HUB_INIT_SPAWNERS_TIMEO
 
 # 设置Spawner
 # 指定使用docker spawner
-c.JupyterHub.spawner_class = "dockerspawner.DockerSpawner"
+c.JupyterHub.spawner_class = "dockerspawner.SwarmSpawner"
 # 指定Spawner容器使用的镜像
-c.DockerSpawner.image = os.environ.get("SPAWNER_NOTEBOOK_IMAGE", 'jupyter/base-notebook:notebook-6.5.4')
+c.SwarmSpawner.image = os.environ.get("SPAWNER_NOTEBOOK_IMAGE", 'jupyter/base-notebook:notebook-6.5.4')
 # 指定镜像的拉取模式,可选的有
 # + `ifnotpresent`-如果没有就拉取
 # + `always`-总是检查更新并拉取
 # + `never`- 总是不拉取,如果本地没有就抛出错误
 # + `skip`- 总是不拉取,但也不抛出错误
-c.DockerSpawner.pull_policy = os.environ.get("SPAWNER_PULL_POLICY", 'ifnotpresent')
+c.SwarmSpawner.pull_policy = os.environ.get("SPAWNER_PULL_POLICY", 'ifnotpresent')
 # 指定Spawner容器使用内部网络
-c.DockerSpawner.use_internal_ip = True
+c.SwarmSpawner.use_internal_ip = True
 # 指定网络Spawner容器连接的网络,必须从环境变量指定
 network_name = os.environ["SPAWNER_NETWORK_NAME"]
 if network_name:
-    c.DockerSpawner.network_name = network_name
+    c.SwarmSpawner.network_name = network_name
 else:
     raise AttributeError("need to set environ DOCKER_NETWORK_NAME")
 # 设置Spawner容器存储
 notebook_dir = os.environ.get('SPAWNER_NOTEBOOK_DIR', '/home/jovyan/work')
-c.DockerSpawner.notebook_dir = notebook_dir
+c.SwarmSpawner.notebook_dir = notebook_dir
 # 不同用户使用不同的volumes
-c.DockerSpawner.volumes = {'jupyterhub-user-{username}': f"{notebook_dir}/persistence"}
+c.SwarmSpawner.volumes = {'jupyterhub-user-{username}': f"{notebook_dir}/persistence"}
 # 限制cpu数
-c.DockerSpawner.cpu_limit = float(os.environ.get('SPAWNER_CPU_LIMIT', '2'))
+c.SwarmSpawner.cpu_limit = float(os.environ.get('SPAWNER_CPU_LIMIT', '2'))
 # 限制cpu最低使用量
-c.DockerSpawner.cpu_guarantee = float(os.environ.get('SPAWNER_CPU_GUARANTEE', '1'))
+c.SwarmSpawner.cpu_guarantee = float(os.environ.get('SPAWNER_CPU_GUARANTEE', '1'))
 
 # 限制容器内存
-c.DockerSpawner.mem_limit = os.environ.get('SPAWNER_MEM_LIMIT', '4G')
+c.SwarmSpawner.mem_limit = os.environ.get('SPAWNER_MEM_LIMIT', '4G')
 # 最低容器内存
-c.DockerSpawner.mem_guarantee = os.environ.get('SPAWNER_MEM_GUARANTEE', '1G')
+c.SwarmSpawner.mem_guarantee = os.environ.get('SPAWNER_MEM_GUARANTEE', '1G')
 # 容器的环境变量设置,使用`A:1;B:2`这样的形式
-DockerSpawner_environment = os.environ.get('SPAWNER_ENVIRONMENT')
-if DockerSpawner_environment:
-    c.DockerSpawner.environment = {i.split(":")[0].strip(): i.split(":")[1].strip() for i in DockerSpawner_environment.split(";") if i.strip()}
+SwarmSpawner_environment = os.environ.get('SPAWNER_ENVIRONMENT')
+if SwarmSpawner_environment:
+    c.SwarmSpawner.environment = {i.split(":")[0].strip(): i.split(":")[1].strip() for i in SwarmSpawner_environment.split(";") if i.strip()}
 # 容器启动命令
-c.DockerSpawner.cmd = os.environ.get("SPAWNER_SPAWN_CMD", "start-singleuser.sh")
+c.SwarmSpawner.cmd = os.environ.get("SPAWNER_SPAWN_CMD", "start-singleuser.sh")
 
 # Spawner容器在程序停止后删除容器
-c.DockerSpawner.remove = True if os.environ.get("SPAWNER_REMOVE", "True").lower() in ("true", "1", "ok") else False
+c.SwarmSpawner.remove = True if os.environ.get("SPAWNER_REMOVE", "True").lower() in ("true", "1", "ok") else False
 # Spawner容器设为debug模式
-c.DockerSpawner.debug = True if os.environ.get("SPAWNER_DEBUG", "True").lower() in ("true", "1", "ok") else False
+c.SwarmSpawner.debug = True if os.environ.get("SPAWNER_DEBUG", "True").lower() in ("true", "1", "ok") else False
 # Spawner关闭与hub连接前允许的最大故障数,0表示不限制
-c.DockerSpawner.consecutive_failure_limit = int(os.environ.get("SPAWNER_CONSECUTIVE_FAILURE_LIMIT", "0"))
+c.SwarmSpawner.consecutive_failure_limit = int(os.environ.get("SPAWNER_CONSECUTIVE_FAILURE_LIMIT", "0"))
 # 轮询Spawner的间隔,单位s
-c.DockerSpawner.poll_interval = int(os.environ.get("SPAWNER_POLL_INTERVAL", "30"))
+c.SwarmSpawner.poll_interval = int(os.environ.get("SPAWNER_POLL_INTERVAL", "30"))
 # docker容器启动最大等待时间
-c.DockerSpawner.start_timeout = int(os.environ.get("SPAWNER_START_TIMEOUT", "120"))
+c.SwarmSpawner.start_timeout = int(os.environ.get("SPAWNER_START_TIMEOUT", "120"))
 # docker容器启动的时候是否要使用gpu,使用几个gpu,如果不填则表示不使用gpu
-DockerSpawner_use_gpus = os.environ.get("SPAWNER_USE_GPUS", "").lower()
-if DockerSpawner_use_gpus:
-    DockerSpawner_use_gpus_count = 0
-    if DockerSpawner_use_gpus == "all":
-        DockerSpawner_use_gpus_count = -1
-    elif DockerSpawner_use_gpus.isdigit():
-        DockerSpawner_use_gpus_count = int(DockerSpawner_use_gpus)
-    if DockerSpawner_use_gpus_count != 0:
-        c.DockerSpawner.extra_host_config = {
+SwarmSpawner_use_gpus = os.environ.get("SPAWNER_USE_GPUS", "").lower()
+if SwarmSpawner_use_gpus:
+    SwarmSpawner_use_gpus_count = 0
+    if SwarmSpawner_use_gpus == "all":
+        SwarmSpawner_use_gpus_count = -1
+    elif SwarmSpawner_use_gpus.isdigit():
+        SwarmSpawner_use_gpus_count = int(SwarmSpawner_use_gpus)
+    if SwarmSpawner_use_gpus_count != 0:
+        c.SwarmSpawner.extra_host_config = {
             "device_requests": [
                 docker.types.DeviceRequest(
-                    count=DockerSpawner_use_gpus_count,
+                    count=SwarmSpawner_use_gpus_count,
                     capabilities=[["gpu"]],
                 ),
             ],

@@ -1,0 +1,1 @@
+docker buildx build --push --platform=linux/amd64,linux/arm64 -t hsz1273327/jupyterhub-for-swarm:4.0.1 -t hsz1273327/jupyterhub-for-swarm:latest .

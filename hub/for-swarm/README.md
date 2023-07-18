@@ -1,6 +1,4 @@
-# 使用docker的通用部署方案
-
-本镜像适用于打算使用单机docker方式部署单用户notebook的场景
+# 使用swarm的通用部署方案
 
 ## jupyterhub的配置项
 
