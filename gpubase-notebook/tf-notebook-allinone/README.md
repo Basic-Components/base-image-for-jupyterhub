@@ -8,6 +8,9 @@
 
 + cython
 + lxml
++ transformers
++ datasets
++ huggingface_hub
 
 > 数据获取
 
