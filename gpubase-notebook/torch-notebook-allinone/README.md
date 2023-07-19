@@ -8,6 +8,9 @@
 
 + cython
 + lxml
++ diffusers
++ transformers
++ datasets
 
 > 数据获取
 

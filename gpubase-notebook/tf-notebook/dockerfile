@@ -19,6 +19,7 @@ ENV TENSORFLOW_VERSION=${TENSORFLOW_VERSION}
 
 RUN pip --no-cache-dir install tensorflow==$TENSORFLOW_VERSION
 RUN pip --no-cache-dir install transformers
+RUN pip --no-cache-dir install datasets
 
 RUN mamba install --channel conda-forge fastparquet pyarrow fastavro pygraphviz pydot lxml cython Pillow
 

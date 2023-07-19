@@ -11,7 +11,9 @@ ARG CU
 ENV PYTORCH_VERSION=${PYTORCH_VERSION}
 ENV CU=${CU}
 RUN pip install --no-cache-dir torch==$PYTORCH_VERSION torchvision torchaudio --index-url https://download.pytorch.org/whl/cu$CU
+RUN pip install --no-cache-dir diffusers["torch"]
 RUN pip install --no-cache-dir transformers
+RUN pip --no-cache-dir install datasets
 
 RUN mamba install --channel conda-forge fastparquet pyarrow fastavro pygraphviz pydot lxml cython Pillow
 
