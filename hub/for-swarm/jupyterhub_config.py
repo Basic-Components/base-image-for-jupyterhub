@@ -37,7 +37,13 @@
 + SPAWNER_CONSECUTIVE_FAILURE_LIMIT: 默认0,Spawner关闭与hub连接前允许的最大故障数,0表示不限制
 + SPAWNER_POLL_INTERVAL: 默认30, 轮询Spawner的间隔,单位s
 + SPAWNER_START_TIMEOUT: 默认120,单用户容器启动最大等待时间,单位s
-+ SPAWNER_USE_GPUS: 选填,spawner对应的容器是否需要使用gpu,使用几个gpu,可以为正整数或为-1或者all
++ SPAWNER_USE_GPUS: 选填,spawner对应的容器是否需要使用gpu,使用几个gpu,可以为正整数或为-1或者all,也可以使用`device_id=xxx`指定使用的gpu设备号
++ SPAWNER_CONSTRAINTS: 选填,spawner对应的容器的部署位置限制,以`,`隔开限制
++ SPAWNER_PREFERENCE: 选填,spawner对应的容器的部署优先策略,以`,`隔开策略,每条策略形式为`策略:标签`
++ SPAWNER_PLATFORM: 选填,spawner对应的容器部署的平台限制,以`,`隔开限制,每条限制形式为`arch:os`
+
+
+SwarmSpawner_platforms = os.environ.get('SPAWNER_PLATFORM')
 
 > AUTH设置
 
@@ -49,9 +55,8 @@
 + AUTH_ENABLE_SIGNUP: 默认`True`,是否开放新用户注册
 + AUTH_OPEN_SIGNUP: 默认`False`,是否允许用户注册后未经管理员确认就可以进入使用
 """
-# import nativeauthenticator
+
 import os
-import docker
 
 c = get_config()   # noqa: F821
 # hub部分配置
@@ -95,7 +100,7 @@ c.JupyterHub.init_spawners_timeout = int(os.environ.get("HUB_INIT_SPAWNERS_TIMEO
 # 指定使用docker spawner
 c.JupyterHub.spawner_class = "dockerspawner.SwarmSpawner"
 # 指定Spawner容器使用的镜像
-c.SwarmSpawner.image = os.environ.get("SPAWNER_NOTEBOOK_IMAGE", 'jupyter/base-notebook:notebook-6.5.4')
+c.DockerSpawner.image = os.environ.get("SPAWNER_NOTEBOOK_IMAGE", 'jupyter/base-notebook:notebook-6.5.4')
 # 指定镜像的拉取模式,可选的有
 # + `ifnotpresent`-如果没有就拉取
 # + `always`-总是检查更新并拉取
@@ -131,33 +136,58 @@ if SwarmSpawner_environment:
 # 容器启动命令
 c.SwarmSpawner.cmd = os.environ.get("SPAWNER_SPAWN_CMD", "start-singleuser.sh")
 
-# Spawner容器在程序停止后删除容器
-c.SwarmSpawner.remove = True if os.environ.get("SPAWNER_REMOVE", "True").lower() in ("true", "1", "ok") else False
-# Spawner容器设为debug模式
+# Spawner service在程序停止后删除容器
+c.DockerSpawner.remove = True if os.environ.get("SPAWNER_REMOVE", "True").lower() in ("true", "1", "ok") else False
+# Spawner service设为debug模式
 c.SwarmSpawner.debug = True if os.environ.get("SPAWNER_DEBUG", "True").lower() in ("true", "1", "ok") else False
 # Spawner关闭与hub连接前允许的最大故障数,0表示不限制
 c.SwarmSpawner.consecutive_failure_limit = int(os.environ.get("SPAWNER_CONSECUTIVE_FAILURE_LIMIT", "0"))
 # 轮询Spawner的间隔,单位s
 c.SwarmSpawner.poll_interval = int(os.environ.get("SPAWNER_POLL_INTERVAL", "30"))
-# docker容器启动最大等待时间
+# dockerservice启动最大等待时间
 c.SwarmSpawner.start_timeout = int(os.environ.get("SPAWNER_START_TIMEOUT", "120"))
-# docker容器启动的时候是否要使用gpu,使用几个gpu,如果不填则表示不使用gpu
+# dockerservice启动的时候是否要使用gpu,使用几个gpu,如果不填则表示不使用gpu
 SwarmSpawner_use_gpus = os.environ.get("SPAWNER_USE_GPUS", "").lower()
 if SwarmSpawner_use_gpus:
     SwarmSpawner_use_gpus_count = 0
+    SwarmSpawner_use_gpus_device_id = ""
+    _use_gpus = False
     if SwarmSpawner_use_gpus == "all":
         SwarmSpawner_use_gpus_count = -1
+        _use_gpus = True
     elif SwarmSpawner_use_gpus.isdigit():
-        SwarmSpawner_use_gpus_count = int(SwarmSpawner_use_gpus)
-    if SwarmSpawner_use_gpus_count != 0:
-        c.SwarmSpawner.extra_host_config = {
-            "device_requests": [
-                docker.types.DeviceRequest(
-                    count=SwarmSpawner_use_gpus_count,
-                    capabilities=[["gpu"]],
-                ),
-            ],
-        }
+        DockerSpawner_use_gpus_count = int(SwarmSpawner_use_gpus)
+        _use_gpus = True
+    elif SwarmSpawner_use_gpus.startswith("device_id="):
+        SwarmSpawner_use_gpus_device_id = SwarmSpawner_use_gpus.replace("device_id=", "").strip()
+        _use_gpus = True
+    if _use_gpus:
+        if DockerSpawner_use_gpus_count != 0:
+            c.SwarmSpawner.extra_resources_spec = {
+                "generic_resources": {
+                    'gpu': DockerSpawner_use_gpus_count
+                }
+            }
+        else:
+            c.SwarmSpawner.extra_resources_spec = {
+                "generic_resources": {
+                    'gpu': SwarmSpawner_use_gpus_device_id
+                }
+            }
+# 指定docker service的部署位置策略
+SwarmSpawner_constraints = os.environ.get('SPAWNER_CONSTRAINTS')
+SwarmSpawner_preferences = os.environ.get('SPAWNER_PREFERENCE')
+SwarmSpawner_platforms = os.environ.get('SPAWNER_PLATFORM')
+if any([SwarmSpawner_constraints, SwarmSpawner_preferences, SwarmSpawner_platforms]):
+    extra_placement_spec = {}
+    if SwarmSpawner_constraints:
+        extra_placement_spec["constraints"] = [i.strip() for i in SwarmSpawner_constraints.split(",")]
+    if SwarmSpawner_preferences:
+        extra_placement_spec["preferences"] = [(i.strip().split(":")[0].strip(), i.strip().split(":")[1].strip()) for i in SwarmSpawner_preferences.split(",")]
+    if SwarmSpawner_platforms:
+        extra_placement_spec["platforms"] = [(i.strip().split(":")[0].strip(), i.strip().split(":")[1].strip()) for i in SwarmSpawner_platforms.split(",")]
+    c.SwarmSpawner.extra_placement_spec = extra_placement_spec
+
 # 用户认证相关设置
 # 指定认证类型
 c.JupyterHub.authenticator_class = 'nativeauthenticator.NativeAuthenticator'

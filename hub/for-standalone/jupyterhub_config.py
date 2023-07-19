@@ -37,7 +37,7 @@
 + SPAWNER_CONSECUTIVE_FAILURE_LIMIT: 默认0,Spawner关闭与hub连接前允许的最大故障数,0表示不限制
 + SPAWNER_POLL_INTERVAL: 默认30, 轮询Spawner的间隔,单位s
 + SPAWNER_START_TIMEOUT: 默认120,单用户容器启动最大等待时间,单位s
-+ SPAWNER_USE_GPUS: 选填,spawner对应的容器是否需要使用gpu,使用几个gpu,可以为正整数或为-1或者all
++ SPAWNER_USE_GPUS: 选填,spawner对应的容器是否需要使用gpu,使用几个gpu,可以为正整数或为-1或者all,也可以使用`device_ids=xxx,xxx`指定使用的gpu设备号
 
 > AUTH设置
 
@@ -145,19 +145,37 @@ c.DockerSpawner.start_timeout = int(os.environ.get("SPAWNER_START_TIMEOUT", "120
 DockerSpawner_use_gpus = os.environ.get("SPAWNER_USE_GPUS", "").lower()
 if DockerSpawner_use_gpus:
     DockerSpawner_use_gpus_count = 0
+    DockerSpawner_use_gpus_device_ids = []
+    _use_gpus = False
     if DockerSpawner_use_gpus == "all":
         DockerSpawner_use_gpus_count = -1
+        _use_gpus = True
     elif DockerSpawner_use_gpus.isdigit():
         DockerSpawner_use_gpus_count = int(DockerSpawner_use_gpus)
-    if DockerSpawner_use_gpus_count != 0:
-        c.DockerSpawner.extra_host_config = {
-            "device_requests": [
-                docker.types.DeviceRequest(
-                    count=DockerSpawner_use_gpus_count,
-                    capabilities=[["gpu"]],
-                ),
-            ],
-        }
+        _use_gpus = True
+    elif DockerSpawner_use_gpus.startswith("device_ids="):
+        DockerSpawner_use_gpus_device_ids = [i.strip() for i in DockerSpawner_use_gpus.replace("device_ids=", "").split(",")]
+        _use_gpus = True
+
+    if _use_gpus:
+        if DockerSpawner_use_gpus_count != 0:
+            c.DockerSpawner.extra_host_config = {
+                "device_requests": [
+                    docker.types.DeviceRequest(
+                        count=DockerSpawner_use_gpus_count,
+                        capabilities=[["gpu"]],
+                    ),
+                ],
+            }
+        else:
+            c.DockerSpawner.extra_host_config = {
+                "device_requests": [
+                    docker.types.DeviceRequest(
+                        device_ids=DockerSpawner_use_gpus_device_ids,
+                        capabilities=[["gpu"]],
+                    ),
+                ],
+            }
 # 用户认证相关设置
 # 指定认证类型
 c.JupyterHub.authenticator_class = 'nativeauthenticator.NativeAuthenticator'
