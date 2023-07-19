@@ -42,9 +42,6 @@
 + SPAWNER_PREFERENCE: 选填,spawner对应的容器的部署优先策略,以`,`隔开策略,每条策略形式为`策略:标签`
 + SPAWNER_PLATFORM: 选填,spawner对应的容器部署的平台限制,以`,`隔开限制,每条限制形式为`arch:os`
 
-
-SwarmSpawner_platforms = os.environ.get('SPAWNER_PLATFORM')
-
 > AUTH设置
 
 + AUTH_ADMIN_USER: 默认`admin`,指定admin用户的用户名,多个用`,`隔开
@@ -179,7 +176,7 @@ SwarmSpawner_constraints = os.environ.get('SPAWNER_CONSTRAINTS')
 SwarmSpawner_preferences = os.environ.get('SPAWNER_PREFERENCE')
 SwarmSpawner_platforms = os.environ.get('SPAWNER_PLATFORM')
 if any([SwarmSpawner_constraints, SwarmSpawner_preferences, SwarmSpawner_platforms]):
-    extra_placement_spec = {}
+    extra_placement_spec: dict[str, list[str | tuple[str, str]]] = {}
     if SwarmSpawner_constraints:
         extra_placement_spec["constraints"] = [i.strip() for i in SwarmSpawner_constraints.split(",")]
     if SwarmSpawner_preferences:

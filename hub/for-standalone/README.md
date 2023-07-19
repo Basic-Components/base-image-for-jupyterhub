@@ -41,7 +41,7 @@
 + SPAWNER_CONSECUTIVE_FAILURE_LIMIT: 默认0,Spawner关闭与hub连接前允许的最大故障数,0表示不限制
 + SPAWNER_POLL_INTERVAL: 默认30, 轮询Spawner的间隔,单位s
 + SPAWNER_START_TIMEOUT: 默认120,单用户容器启动最大等待时间,单位s
-+ SPAWNER_USE_GPUS: 选填,spawner对应的容器是否需要使用gpu,使用几个gpu,可以为正整数或为-1或者all
++ SPAWNER_USE_GPUS: 选填,spawner对应的容器是否需要使用gpu,使用几个gpu,可以为正整数或为-1或者all,也可以使用`device_ids=xxx,xxx`指定使用的gpu设备号
 
 > AUTH设置
 
