@@ -18,6 +18,7 @@ ENV TENSORFLOW_VERSION=${TENSORFLOW_VERSION}
 # RUN source $CONDA_DIR/etc/conda/activate.d/env_vars.sh
 
 RUN pip --no-cache-dir install tensorflow==$TENSORFLOW_VERSION
+RUN pip --no-cache-dir install transformers
 
 RUN mamba install --channel conda-forge fastparquet pyarrow fastavro pygraphviz pydot lxml cython Pillow
 

@@ -8,6 +8,7 @@
 
 + cython
 + lxml
++ transformers
 
 > 数据获取
 
