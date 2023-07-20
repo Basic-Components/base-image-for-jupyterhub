@@ -30,6 +30,13 @@
     + `skip`- 总是不拉取,但也不抛出错误
 + SPAWNER_NETWORK_NAME: 必填,指定使用的docker network名
 + SPAWNER_NOTEBOOK_DIR: 默认`/home/jovyan/work`,指定notebook容器中notebook存放路径,不建议修改
++ SPAWNER_VOLUME_TYPE: 默认`local`,notebook服务保存的文件存放的位置类型,支持"local", "nfs3", "nfs4", "cifs"四种类型
++ SPAWNER_NFS_HOST: 如果`SPAWNER_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器的地址,比如`10.0.0.10`
++ SPAWNER_NFS_DEVICE: 如果`SPAWNER_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器上的路径,比如`:/var/docker-nfs`
++ SPAWNER_NFS_OPTS: 选填,如果`SPAWNER_VOLUME_TYPE`为"nfs3"或"nfs4则生效,nfs3时默认值为`,rw,vers=3,nolock,soft`;nfs4时默认值为`,rw,nfsvers=4,async`,指定nfs连接的配置项
++ SPAWNER_CIFS_HOST: 如果`SPAWNER_VOLUME_TYPE`为cifs则必填,指定cifs服务器的地址,比如`uxxxxx.your-server.de`
++ SPAWNER_CIFS_DEVICE: 如果`SPAWNER_VOLUME_TYPE`为cifs则必填,指定cifs服务器上的路径,比如`//uxxxxx.your-server.de/backup`
++ SPAWNER_CIFS_OPTS:  选填,如果`SPAWNER_VOLUME_TYPE`为cifs则生效,默认值为`,file_mode=0777,dir_mode=0777`
 + SPAWNER_CPU_LIMIT: 默认`2`,指定notebook容器最大可使用的cpu资源量
 + SPAWNER_CPU_GUARANTEE: 默认`1`,指定notebook容器最低使用的cpu资源量
 + SPAWNER_MEM_LIMIT: 默认`4G`,指定notebook容器最大可使用的内存资源量
