@@ -26,13 +26,13 @@
     + `skip`- 总是不拉取,但也不抛出错误
 + SPAWNER_NETWORK_NAME: 必填,指定使用的docker network名
 + SPAWNER_NOTEBOOK_DIR: 默认`/home/jovyan/work`,指定notebook容器中notebook存放路径,不建议修改
-+ SPAWNER_VOLUME_TYPE: 默认`local`,notebook服务保存的文件存放的位置类型,支持"local", "nfs3", "nfs4", "cifs"四种类型
-+ SPAWNER_NFS_HOST: 如果`SPAWNER_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器的地址,比如`10.0.0.10`
-+ SPAWNER_NFS_DEVICE: 如果`SPAWNER_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器上的路径,比如`:/var/docker-nfs`
-+ SPAWNER_NFS_OPTS: 选填,如果`SPAWNER_VOLUME_TYPE`为"nfs3"或"nfs4则生效,nfs3时默认值为`,rw,vers=3,nolock,soft`;nfs4时默认值为`,rw,nfsvers=4,async`,指定nfs连接的配置项
-+ SPAWNER_CIFS_HOST: 如果`SPAWNER_VOLUME_TYPE`为cifs则必填,指定cifs服务器的地址,比如`uxxxxx.your-server.de`
-+ SPAWNER_CIFS_DEVICE: 如果`SPAWNER_VOLUME_TYPE`为cifs则必填,指定cifs服务器上的路径,比如`//uxxxxx.your-server.de/backup`
-+ SPAWNER_CIFS_OPTS:  选填,如果`SPAWNER_VOLUME_TYPE`为cifs则生效,默认值为`,file_mode=0777,dir_mode=0777`
++ SPAWNER_PERSISTENCE_VOLUME_TYPE: 默认`local`,notebook服务保存的文件存放的位置类型,支持"local", "nfs3", "nfs4", "cifs"四种类型
++ SPAWNER_PERSISTENCE_NFS_HOST: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器的地址,比如`10.0.0.10`
++ SPAWNER_PERSISTENCE_NFS_DEVICE: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器上的路径,比如`:/var/docker-nfs`
++ SPAWNER_PERSISTENCE_NFS_OPTS: 选填,如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则生效,nfs3时默认值为`,rw,vers=3,nolock,soft`;nfs4时默认值为`,rw,nfsvers=4,async`,指定nfs连接的配置项
++ SPAWNER_PERSISTENCE_CIFS_HOST: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为cifs则必填,指定cifs服务器的地址,比如`uxxxxx.your-server.de`
++ SPAWNER_PERSISTENCE_CIFS_DEVICE: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为cifs则必填,指定cifs服务器上的路径,比如`//uxxxxx.your-server.de/backup`
++ SPAWNER_PERSISTENCE_CIFS_OPTS:  选填,如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为cifs则生效,默认值为`,file_mode=0777,dir_mode=0777`
 + SPAWNER_CPU_LIMIT: 默认`2`,指定notebook容器最大可使用的cpu资源量
 + SPAWNER_CPU_GUARANTEE: 默认`1`,指定notebook容器最低使用的cpu资源量
 + SPAWNER_MEM_LIMIT: 默认`4G`,指定notebook容器最大可使用的内存资源量
@@ -59,8 +59,8 @@
 + AUTH_ENABLE_SIGNUP: 默认`True`,是否开放新用户注册
 + AUTH_OPEN_SIGNUP: 默认`False`,是否允许用户注册后未经管理员确认就可以进入使用
 """
-
 import os
+import copy
 
 c = get_config()   # noqa: F821
 # hub部分配置
@@ -124,67 +124,79 @@ notebook_dir = os.environ.get('SPAWNER_NOTEBOOK_DIR', '/home/jovyan/work')
 c.SwarmSpawner.notebook_dir = notebook_dir
 # 设置容器存储的位置,支持local,nfs3,nfs4,cifs
 supported_volume_types = ["local", "nfs3", "nfs4", "cifs"]
-spawner_volume_type = os.environ.get('SPAWNER_VOLUME_TYPE', 'local')
+spawner_volume_type = os.environ.get('SPAWNER_PERSISTENCE_VOLUME_TYPE', 'local')
 
 if spawner_volume_type not in supported_volume_types:
-    raise AttributeError(f"need to set SPAWNER_VOLUME_TYPE in {supported_volume_types}")
+    raise AttributeError(f"need to set SPAWNER_PERSISTENCE_VOLUME_TYPE in {supported_volume_types}")
 if spawner_volume_type == "local":
     c.SwarmSpawner.volumes = {'jupyterhub-user-{username}': f"{notebook_dir}/persistence"}
-elif spawner_volume_type in ("nfs3", "nfs4"):
-    spawner_nfs_host = os.environ.get('SPAWNER_NFS_HOST')
-    spawner_nfs_device = os.environ.get('SPAWNER_NFS_DEVICE')
-    if not all([spawner_nfs_host, spawner_nfs_device]):
-        raise AttributeError("need to set SPAWNER_CIFS_HOST and SPAWNER_CIFS_DEVICE")
-    if not spawner_nfs_device.startswith(":"):
-        spawner_nfs_device = ":" + spawner_nfs_device
-    if spawner_volume_type == "nfs3":
-        spawner_nfs_opts = os.environ.get("SPAWNER_NFS_OPTS", ",rw,vers=3,nolock,soft")
-    else:
-        spawner_nfs_opts = os.environ.get("SPAWNER_NFS_OPTS", ",rw,nfsvers=4,async")
-    if not spawner_nfs_opts.startswith(","):
-        spawner_nfs_opts = "," + spawner_nfs_opts
-    mounts = [
-        {
-            "type": "volume",
-            "target": notebook_dir,
-            "source": "jupyterhub-user-{username}",
-            "no_copy": True,
-            "driver_config": {
-                'name': 'local',
-                'options': {
-                    'type': 'nfs',
-                    'o': 'addr=' + spawner_nfs_host + spawner_nfs_opts,
-                    'device': spawner_nfs_device
-                }
-            }
-        }
-    ]
 else:
-    spawner_cifs_host = os.environ.get('SPAWNER_CIFS_HOST')
-    spawner_cifs_device = os.environ.get('SPAWNER_CIFS_DEVICE')
-    if not all([spawner_cifs_host, spawner_cifs_device]):
-        raise AttributeError("need to set SPAWNER_CIFS_HOST and SPAWNER_CIFS_DEVICE")
-    spawner_cifs_opts = os.environ.get("SPAWNER_CIFS_OPTS", ",file_mode=0777,dir_mode=0777")
-    if not spawner_cifs_opts.startswith(","):
-        spawner_cifs_opts = "," + spawner_cifs_opts
-    mounts = [
-        {
-            "type": "volume",
-            "target": notebook_dir,
-            "source": "jupyterhub-user-{username}",
-            "no_copy": True,
-            "driver_config": {
-                'name': 'local',
-                'options': {
-                    'type': 'nfs',
-                    'o': 'addr=' + spawner_cifs_host + spawner_cifs_opts,
-                    'device': spawner_cifs_device
+    if spawner_volume_type in ("nfs3", "nfs4"):
+        spawner_nfs_host = os.environ.get('SPAWNER_PERSISTENCE_NFS_HOST')
+        spawner_nfs_device = os.environ.get('SPAWNER_PERSISTENCE_NFS_DEVICE')
+        if not all([spawner_nfs_host, spawner_nfs_device]):
+            raise AttributeError("need to set SPAWNER_PERSISTENCE_NFS_HOST and SPAWNER_PERSISTENCE_NFS_DEVICE")
+        if not spawner_nfs_device.startswith(":"):
+            spawner_nfs_device = ":" + spawner_nfs_device
+        if spawner_volume_type == "nfs3":
+            spawner_nfs_opts = os.environ.get("SPAWNER_PERSISTENCE_NFS_OPTS", ",rw,vers=3,nolock,soft")
+        else:
+            spawner_nfs_opts = os.environ.get("SPAWNER_PERSISTENCE_NFS_OPTS", ",rw,nfsvers=4,async")
+        if not spawner_nfs_opts.startswith(","):
+            spawner_nfs_opts = "," + spawner_nfs_opts
+        mounts = [
+            {
+                "type": "volume",
+                "target": notebook_dir,
+                "source": "jupyterhub-user-{username}",
+                "no_copy": True,
+                "driver_config": {
+                    'name': 'local',
+                    'options': {
+                        'type': 'nfs',
+                        'o': 'addr=' + spawner_nfs_host + spawner_nfs_opts,
+                        'device': spawner_nfs_device
+                    }
                 }
             }
-        }
-    ]
+        ]
+    else:
+        spawner_cifs_host = os.environ.get('SPAWNER_PERSISTENCE_CIFS_HOST')
+        spawner_cifs_device = os.environ.get('SPAWNER_PERSISTENCE_CIFS_DEVICE')
+        if not all([spawner_cifs_host, spawner_cifs_device]):
+            raise AttributeError("need to set SPAWNER_PERSISTENCE_CIFS_HOST and SPAWNER_PERSISTENCE_CIFS_DEVICE")
+        spawner_cifs_opts = os.environ.get("SPAWNER_PERSISTENCE_CIFS_OPTS", ",file_mode=0777,dir_mode=0777")
+        if not spawner_cifs_opts.startswith(","):
+            spawner_cifs_opts = "," + spawner_cifs_opts
+        mounts = [
+            {
+                "type": "volume",
+                "target": notebook_dir,
+                "source": "jupyterhub-user-{username}",
+                "no_copy": True,
+                "driver_config": {
+                    'name': 'local',
+                    'options': {
+                        'type': 'nfs',
+                        'o': 'addr=' + spawner_cifs_host + spawner_cifs_opts,
+                        'device': spawner_cifs_device
+                    }
+                }
+            }
+        ]
 
-c.SwarmSpawner.mounts = mounts
+    c.SwarmSpawner.mounts = mounts
+    def spawner_start_hook(spawner):
+        # username = spawner.user.name
+        mounts = []
+        for mount in spawner.mounts:
+            new_mount = copy.deepcopy(mount)
+            device = spawner.format_volume_name(mount["driver_config"]["options"]["device"],spawner)
+            new_mount["driver_config"]["options"]["device"]=device
+            mounts.append(new_mount)
+        spawner.mounts = mounts
+
+    c.Spawner.pre_spawn_hook = spawner_start_hook
 
 # 限制cpu数
 c.SwarmSpawner.cpu_limit = float(os.environ.get('SPAWNER_CPU_LIMIT', '2'))
