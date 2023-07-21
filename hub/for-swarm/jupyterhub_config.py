@@ -213,22 +213,29 @@ else:
             }
         ]
 
-    def spawner_start_hook(spawner):
-        # username = spawner.user.name
-        print("spawner_start_hook start")
-        mounts = []
-        old_mounts = spawner.extra_container_spec.get("mounts")
-        if old_mounts:
-            for mount in old_mounts:
-                new_mount = copy.deepcopy(mount)
+
+def spawner_start_hook(spawner):
+    # username = spawner.user.name
+    print("spawner_start_hook start")
+    mounts = []
+    old_mounts = spawner.extra_container_spec.get("mounts")
+    if old_mounts:
+        for mount in old_mounts:
+            new_mount = copy.deepcopy(mount)
+            # find source and target
+            new_mount["source"] = spawner.format_volume_name((mount["source"]), spawner)
+            new_mount["target"] = spawner.format_volume_name((mount["target"]), spawner)
+            # find device
+            if mount.get("driver_config") and mount["driver_config"].get("options") and mount["driver_config"]["options"].get("device"):
                 device = spawner.format_volume_name(mount["driver_config"]["options"]["device"], spawner)
                 new_mount["driver_config"]["options"]["device"] = device
-                mounts.append(new_mount)
-            spawner.mounts = mounts
-            print("spawner_start_hook format device name ok")
-        print("spawner_start_hook ok")
+            mounts.append(new_mount)
+        spawner.mounts = mounts
+        print("spawner_start_hook format device name ok")
+    print("spawner_start_hook ok")
 
-    c.Spawner.pre_spawn_hook = spawner_start_hook
+
+c.Spawner.pre_spawn_hook = spawner_start_hook
 
 c.SwarmSpawner.extra_container_spec = {
     'mounts': mounts
