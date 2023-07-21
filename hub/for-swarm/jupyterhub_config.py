@@ -150,7 +150,6 @@ spawner_volume_type = os.environ.get('SPAWNER_PERSISTENCE_VOLUME_TYPE', 'local')
 if spawner_volume_type not in supported_volume_types:
     raise AttributeError(f"need to set SPAWNER_PERSISTENCE_VOLUME_TYPE in {supported_volume_types}")
 if spawner_volume_type == "local":
-    # c.SwarmSpawner.volumes = {'jupyterhub-user-{username}': f"{notebook_dir}/persistence"}
     mounts = [
         {
             "type": "volume",
@@ -216,17 +215,24 @@ else:
 
     def spawner_start_hook(spawner):
         # username = spawner.user.name
+        print("spawner_start_hook start")
         mounts = []
-        for mount in spawner.mounts:
-            new_mount = copy.deepcopy(mount)
-            device = spawner.format_volume_name(mount["driver_config"]["options"]["device"], spawner)
-            new_mount["driver_config"]["options"]["device"] = device
-            mounts.append(new_mount)
-        spawner.mounts = mounts
+        old_mounts = spawner.extra_container_spec.get("mounts")
+        if old_mounts:
+            for mount in old_mounts:
+                new_mount = copy.deepcopy(mount)
+                device = spawner.format_volume_name(mount["driver_config"]["options"]["device"], spawner)
+                new_mount["driver_config"]["options"]["device"] = device
+                mounts.append(new_mount)
+            spawner.mounts = mounts
+            print("spawner_start_hook format device name ok")
+        print("spawner_start_hook ok")
 
     c.Spawner.pre_spawn_hook = spawner_start_hook
-    
-c.SwarmSpawner.mounts = mounts
+
+c.SwarmSpawner.extra_container_spec = {
+    'mounts': mounts
+}
 # 限制cpu数
 c.SwarmSpawner.cpu_limit = float(os.environ.get('SPAWNER_CPU_LIMIT', '2'))
 # 限制cpu最低使用量
