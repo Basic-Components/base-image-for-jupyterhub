@@ -1,11 +1,17 @@
 """jupyterhub的配置项
 
 可以使用环境变量设置的项目包括
+> 外部代理设置
+
++ PROXY_SHOULD_START: 默认True,执行容器是否要外接proxy,如果为True则不外接
++ PROXY_API_URL: 如果PROXY_SHOULD_START设置为False则必填,外接proxy的url
++ CONFIGPROXY_AUTH_TOKEN: 如果PROXY_SHOULD_START设置为False则必填,和外接proxy共用的认证token
 
 > HUB设置
 
++ HUB_HUB_PORT: 默认`8001`,hub的内部端口
 + HUB_CONNECT_IP: 默认`jupyterhub`,连接hub可以使用的ip
-+ HUB_PORT: 默认`8000`,指定hub对外的端口,注意8001和8081都不能使用,
++ HUB_PORT: 默认`8000`,指定hub对外的端口,proxy也会监听该接口,注意8001和8081都不能使用,
 + HUB_SSL_KEY和HUB_SSL_CERT: 可选,用于设置https方式提供服务,需要都提供
 + HUB_COOKIE_SECRET_FILE: 默认`/data/jupyterhub_cookie_secret`,hub的cookie_secret文件存放位置,注意指的是容器中的存放位置
 + HUB_DB_URL: 默认`sqlite:////data/jupyterhub.sqlite`,hub数据保存的数据库位置
@@ -63,9 +69,23 @@ import os
 import copy
 
 c = get_config()   # noqa: F821
+
+# proxy设置
+proxy_should_start = True if os.environ.get("PROXY_SHOULD_START", "TRUE").lower() in ("true", "1", "ok") else False
+c.ConfigurableHTTPProxy.should_start = proxy_should_start
+if not proxy_should_start:
+    proxy_api_url = os.environ.get("PROXY_API_URL")
+    if not proxy_api_url:
+        raise AttributeError(f"need to set PROXY_API_URL")
+    c.ConfigurableHTTPProxy.api_url = proxy_api_url
+    CONFIGPROXY_AUTH_TOKEN = os.environ.get("CONFIGPROXY_AUTH_TOKEN")
+    if not CONFIGPROXY_AUTH_TOKEN:
+        raise AttributeError(f"need to set CONFIGPROXY_AUTH_TOKEN")
+    c.ConfigurableHTTPProxy.auth_token = CONFIGPROXY_AUTH_TOKEN
+
 # hub部分配置
 # hub的内网端口
-c.JupyterHub.hub_port = 8081
+c.JupyterHub.hub_port = int(os.environ.get("HUB_HUB_PORT", '8001'))
 # 指定hub的内网host
 c.JupyterHub.hub_connect_ip = os.environ.get("HUB_CONNECT_IP", 'jupyterhub')
 # 指定hub对外的端口
@@ -186,13 +206,14 @@ else:
         ]
 
     c.SwarmSpawner.mounts = mounts
+
     def spawner_start_hook(spawner):
         # username = spawner.user.name
         mounts = []
         for mount in spawner.mounts:
             new_mount = copy.deepcopy(mount)
-            device = spawner.format_volume_name(mount["driver_config"]["options"]["device"],spawner)
-            new_mount["driver_config"]["options"]["device"]=device
+            device = spawner.format_volume_name(mount["driver_config"]["options"]["device"], spawner)
+            new_mount["driver_config"]["options"]["device"] = device
             mounts.append(new_mount)
         spawner.mounts = mounts
 
