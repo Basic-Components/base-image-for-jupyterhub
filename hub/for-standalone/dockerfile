@@ -2,5 +2,7 @@ ARG JUPYTERHUB_VERSION
 FROM --platform=$TARGETPLATFORM jupyterhub/jupyterhub:$JUPYTERHUB_VERSION as base
 RUN pip install jupyterhub-nativeauthenticator
 RUN pip install dockerspawner
+RUN pip install psycopg2-binary
+RUN pip install pymysql
 COPY jupyterhub_config.py /srv/jupyterhub/jupyterhub_config.py
 CMD ["jupyterhub", "-f", "/srv/jupyterhub/jupyterhub_config.py"]
