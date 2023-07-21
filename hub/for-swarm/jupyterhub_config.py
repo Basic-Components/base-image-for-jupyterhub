@@ -150,7 +150,15 @@ spawner_volume_type = os.environ.get('SPAWNER_PERSISTENCE_VOLUME_TYPE', 'local')
 if spawner_volume_type not in supported_volume_types:
     raise AttributeError(f"need to set SPAWNER_PERSISTENCE_VOLUME_TYPE in {supported_volume_types}")
 if spawner_volume_type == "local":
-    c.SwarmSpawner.volumes = {'jupyterhub-user-{username}': f"{notebook_dir}/persistence"}
+    # c.SwarmSpawner.volumes = {'jupyterhub-user-{username}': f"{notebook_dir}/persistence"}
+    mounts = [
+        {
+            "type": "volume",
+            "target": notebook_dir,
+            "source": "jupyterhub-user-{username}",
+            "no_copy": True
+        }
+    ]
 else:
     if spawner_volume_type in ("nfs3", "nfs4"):
         spawner_nfs_host = os.environ.get('SPAWNER_PERSISTENCE_NFS_HOST')
@@ -206,8 +214,6 @@ else:
             }
         ]
 
-    c.SwarmSpawner.mounts = mounts
-
     def spawner_start_hook(spawner):
         # username = spawner.user.name
         mounts = []
@@ -219,7 +225,8 @@ else:
         spawner.mounts = mounts
 
     c.Spawner.pre_spawn_hook = spawner_start_hook
-
+    
+c.SwarmSpawner.mounts = mounts
 # 限制cpu数
 c.SwarmSpawner.cpu_limit = float(os.environ.get('SPAWNER_CPU_LIMIT', '2'))
 # 限制cpu最低使用量
