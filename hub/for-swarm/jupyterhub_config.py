@@ -153,7 +153,7 @@ if spawner_volume_type == "local":
     mounts = [
         {
             "type": "volume",
-            "target": notebook_dir,
+            "target": f"{notebook_dir}/persistence",
             "source": "jupyterhub-user-{username}",
             "no_copy": True
         }
