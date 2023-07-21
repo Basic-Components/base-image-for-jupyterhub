@@ -44,6 +44,7 @@
 + SPAWNER_MEM_LIMIT: 默认`4G`,指定notebook容器最大可使用的内存资源量
 + SPAWNER_MEM_GUARANTEE: 默认`1G`,指定notebook容器最小可使用的内存资源量
 + SPAWNER_ENVIRONMENT: 选填,使用`A:1;B:2`这样的形式指定notebook容器的环境变量
++ SPAWNER_ENDPOINT_MODE: 选填,只能是`vip`或`dnsrr`之一,设置服务的网络访问和负载均衡方式
 + SPAWNER_SPAWN_CMD: 默认`start-singleuser.sh`,指定notebook容器的启动执行命令
 + SPAWNER_REMOVE: 默认`True`,Spawner容器在程序停止后是否删除容器,注意为true时没有保存在对应volume中的数据会丢失
 + SPAWNER_DEBUG: 默认`True`,Spawner容器设为debug模式
@@ -232,6 +233,17 @@ c.SwarmSpawner.mem_guarantee = os.environ.get('SPAWNER_MEM_GUARANTEE', '1G')
 SwarmSpawner_environment = os.environ.get('SPAWNER_ENVIRONMENT')
 if SwarmSpawner_environment:
     c.SwarmSpawner.environment = {i.split(":")[0].strip(): i.split(":")[1].strip() for i in SwarmSpawner_environment.split(";") if i.strip()}
+# 访问和负载均衡模式
+support_endpoint_modes = ["vip", "dnsrr"]
+swarmspawner_endpoint_mode = os.environ.get('SPAWNER_ENDPOINT_MODE')
+if swarmspawner_endpoint_mode:
+    if swarmspawner_endpoint_mode not in support_endpoint_modes:
+        raise AttributeError(f"SPAWNER_ENDPOINT_MODE must in {support_endpoint_modes}")
+    else:
+        c.SwarmSpawner.extra_endpoint_spec = {
+            "mode": swarmspawner_endpoint_mode
+        }
+
 # 容器启动命令
 c.SwarmSpawner.cmd = os.environ.get("SPAWNER_SPAWN_CMD", "start-singleuser.sh")
 

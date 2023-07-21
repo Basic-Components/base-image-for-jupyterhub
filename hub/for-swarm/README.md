@@ -6,10 +6,17 @@
 
 可以使用环境变量设置的项目包括
 
+> 外部代理设置
+
++ PROXY_SHOULD_START: 默认True,执行容器是否要外接proxy,如果为True则不外接
++ PROXY_API_URL: 如果PROXY_SHOULD_START设置为False则必填,外接proxy的url
++ CONFIGPROXY_AUTH_TOKEN: 如果PROXY_SHOULD_START设置为False则必填,和外接proxy共用的认证token
+
 > HUB设置
 
++ HUB_HUB_PORT: 默认`8001`,hub的内部端口
 + HUB_CONNECT_IP: 默认`jupyterhub`,连接hub可以使用的ip
-+ HUB_PORT: 默认`8000`,指定hub对外的端口,注意8001和8081都不能使用,
++ HUB_PORT: 默认`8000`,指定hub对外的端口,proxy也会监听该接口,注意8001和8081都不能使用,
 + HUB_SSL_KEY和HUB_SSL_CERT: 可选,用于设置https方式提供服务,需要都提供
 + HUB_COOKIE_SECRET_FILE: 默认`/data/jupyterhub_cookie_secret`,hub的cookie_secret文件存放位置,注意指的是容器中的存放位置
 + HUB_DB_URL: 默认`sqlite:////data/jupyterhub.sqlite`,hub数据保存的数据库位置
@@ -30,18 +37,19 @@
     + `skip`- 总是不拉取,但也不抛出错误
 + SPAWNER_NETWORK_NAME: 必填,指定使用的docker network名
 + SPAWNER_NOTEBOOK_DIR: 默认`/home/jovyan/work`,指定notebook容器中notebook存放路径,不建议修改
-+ SPAWNER_VOLUME_TYPE: 默认`local`,notebook服务保存的文件存放的位置类型,支持"local", "nfs3", "nfs4", "cifs"四种类型
-+ SPAWNER_NFS_HOST: 如果`SPAWNER_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器的地址,比如`10.0.0.10`
-+ SPAWNER_NFS_DEVICE: 如果`SPAWNER_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器上的路径,比如`:/var/docker-nfs`
-+ SPAWNER_NFS_OPTS: 选填,如果`SPAWNER_VOLUME_TYPE`为"nfs3"或"nfs4则生效,nfs3时默认值为`,rw,vers=3,nolock,soft`;nfs4时默认值为`,rw,nfsvers=4,async`,指定nfs连接的配置项
-+ SPAWNER_CIFS_HOST: 如果`SPAWNER_VOLUME_TYPE`为cifs则必填,指定cifs服务器的地址,比如`uxxxxx.your-server.de`
-+ SPAWNER_CIFS_DEVICE: 如果`SPAWNER_VOLUME_TYPE`为cifs则必填,指定cifs服务器上的路径,比如`//uxxxxx.your-server.de/backup`
-+ SPAWNER_CIFS_OPTS:  选填,如果`SPAWNER_VOLUME_TYPE`为cifs则生效,默认值为`,file_mode=0777,dir_mode=0777`
++ SPAWNER_PERSISTENCE_VOLUME_TYPE: 默认`local`,notebook服务保存的文件存放的位置类型,支持"local", "nfs3", "nfs4", "cifs"四种类型
++ SPAWNER_PERSISTENCE_NFS_HOST: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器的地址,比如`10.0.0.10`
++ SPAWNER_PERSISTENCE_NFS_DEVICE: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器上的路径,比如`:/var/docker-nfs`
++ SPAWNER_PERSISTENCE_NFS_OPTS: 选填,如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则生效,nfs3时默认值为`,rw,vers=3,nolock,soft`;nfs4时默认值为`,rw,nfsvers=4,async`,指定nfs连接的配置项
++ SPAWNER_PERSISTENCE_CIFS_HOST: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为cifs则必填,指定cifs服务器的地址,比如`uxxxxx.your-server.de`
++ SPAWNER_PERSISTENCE_CIFS_DEVICE: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为cifs则必填,指定cifs服务器上的路径,比如`//uxxxxx.your-server.de/backup`
++ SPAWNER_PERSISTENCE_CIFS_OPTS:  选填,如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为cifs则生效,默认值为`,file_mode=0777,dir_mode=0777`
 + SPAWNER_CPU_LIMIT: 默认`2`,指定notebook容器最大可使用的cpu资源量
 + SPAWNER_CPU_GUARANTEE: 默认`1`,指定notebook容器最低使用的cpu资源量
 + SPAWNER_MEM_LIMIT: 默认`4G`,指定notebook容器最大可使用的内存资源量
 + SPAWNER_MEM_GUARANTEE: 默认`1G`,指定notebook容器最小可使用的内存资源量
 + SPAWNER_ENVIRONMENT: 选填,使用`A:1;B:2`这样的形式指定notebook容器的环境变量
++ SPAWNER_ENDPOINT_MODE: 选填,只能是`vip`或`dnsrr`之一,设置服务的网络访问和负载均衡方式
 + SPAWNER_SPAWN_CMD: 默认`start-singleuser.sh`,指定notebook容器的启动执行命令
 + SPAWNER_REMOVE: 默认`True`,Spawner容器在程序停止后是否删除容器,注意为true时没有保存在对应volume中的数据会丢失
 + SPAWNER_DEBUG: 默认`True`,Spawner容器设为debug模式
