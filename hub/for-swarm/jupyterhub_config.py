@@ -230,7 +230,7 @@ def spawner_start_hook(spawner):
                 device = spawner.format_volume_name(mount["driver_config"]["options"]["device"], spawner)
                 new_mount["driver_config"]["options"]["device"] = device
             mounts.append(new_mount)
-        spawner.mounts = mounts
+        spawner.extra_container_spec["mounts"] = mounts
         print("spawner_start_hook format device name ok")
     print("spawner_start_hook ok")
 
