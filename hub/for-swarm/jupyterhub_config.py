@@ -379,7 +379,7 @@ logger.setLevel(logging.DEBUG)
 
 def spawner_start_hook(spawner):
     username = spawner.user.name
-    logger.debug(f'spawner_start_hook for {username} start')
+    logger.info(f'spawner_start_hook for {username} start')
     user_name_suffix = username.split("-")[-1]
     # 挂载mount
     mounts = []
@@ -396,7 +396,7 @@ def spawner_start_hook(spawner):
                 new_mount["driver_config"]["options"]["device"] = device
             mounts.append(new_mount)
         spawner.extra_container_spec["mounts"] = mounts
-    logger.debug(f'spawner_start_hook format device name ok mounts: \n {mounts}')
+    logger.info(f'spawner_start_hook format device name ok mounts: \n {mounts}')
 
     # constraint_image
     spawner.image = default_image
@@ -419,7 +419,7 @@ def spawner_start_hook(spawner):
                     }
             spawner.image = constraint_image_info["image"]
 
-    logger.debug(f'spawner_start_hook user {username} set_image ok,image: {spawner.image} \n with placement_spec \n { spawner.extra_placement_spec }')
+    logger.info(f'spawner_start_hook user {username} set_image ok,image: {spawner.image} \n with placement_spec \n { spawner.extra_placement_spec }')
 
     # constraint_gpu
     # if default_extra_resources_spec:
@@ -429,8 +429,8 @@ def spawner_start_hook(spawner):
         constraint_gpu_info = constraint_gpu_map.get(user_name_suffix)
         if constraint_gpu_info:
             spawner.extra_resources_spec = constraint_gpu_info
-    logger.debug(f'spawner_start_hook user {username} set_gpu ok, with resources_spec \n { spawner.extra_resources_spec }')
-    logger.debug('spawner_start_hook ok')
+    logger.info(f'spawner_start_hook user {username} set_gpu ok, with resources_spec \n { spawner.extra_resources_spec }')
+    logger.info('spawner_start_hook ok')
 
 
 c.Spawner.pre_spawn_hook = spawner_start_hook
