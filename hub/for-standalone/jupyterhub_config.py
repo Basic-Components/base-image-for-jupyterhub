@@ -45,6 +45,8 @@
 + SPAWNER_POLL_INTERVAL: 默认30, 轮询Spawner的间隔,单位s
 + SPAWNER_START_TIMEOUT: 默认120,单用户容器启动最大等待时间,单位s
 + SPAWNER_USE_GPUS: 选填,spawner对应的容器是否需要使用gpu,使用几个gpu,可以为正整数或为-1或者all,也可以使用`device_ids=xxx,xxx`指定使用的gpu设备号
++ SPAWNER_CONSTRAINT_IMAGES: 选填,有值则生效,根据用户名的后缀确定部署镜像和限制,形式如`后缀1->镜像名1;后缀2->镜像名2...`当登录用户用户名有后缀`-后缀1`时会使用镜像1而非默认镜像构造容器
++ SPAWNER_CONSTRAINT_WITH_GPUS: 选填,当SPAWNER_CONSTRAINT_IMAGES生效时可以生效,指定后缀是否使用gpu,gpu设置语法与SPAWNER_USE_GPUS一致,形式如`后缀1->gpu设置1;....`
 
 > AUTH设置
 
@@ -60,6 +62,7 @@
 import os
 import copy
 import docker
+import logging
 
 c = get_config()   # noqa: F821
 # hub部分配置
@@ -103,7 +106,9 @@ c.JupyterHub.init_spawners_timeout = int(os.environ.get("HUB_INIT_SPAWNERS_TIMEO
 # 指定使用docker spawner
 c.JupyterHub.spawner_class = "dockerspawner.DockerSpawner"
 # 指定Spawner容器使用的镜像
-c.DockerSpawner.image = os.environ.get("SPAWNER_NOTEBOOK_IMAGE", 'jupyter/base-notebook:notebook-6.5.4')
+
+default_image = os.environ.get("SPAWNER_NOTEBOOK_IMAGE", 'jupyter/base-notebook:notebook-6.5.4')
+c.DockerSpawner.image = default_image
 # 指定镜像的拉取模式,可选的有
 # + `ifnotpresent`-如果没有就拉取
 # + `always`-总是检查更新并拉取
@@ -128,8 +133,12 @@ spawner_volume_type = os.environ.get('SPAWNER_PERSISTENCE_VOLUME_TYPE', 'local')
 
 if spawner_volume_type not in supported_volume_types:
     raise AttributeError(f"need to set SPAWNER_PERSISTENCE_VOLUME_TYPE in {supported_volume_types}")
+
+default_mounts = []
+default_volumes = {}
 if spawner_volume_type == "local":
-    c.DockerSpawner.volumes = {'jupyterhub-user-{username}': f"{notebook_dir}/persistence"}
+    default_volumes = {'jupyterhub-user-{username}': f"{notebook_dir}/persistence"}
+    c.DockerSpawner.volumes = default_volumes
 else:
     if spawner_volume_type in ("nfs3", "nfs4"):
         spawner_nfs_host = os.environ.get('SPAWNER_PERSISTENCE_NFS_HOST')
@@ -144,7 +153,7 @@ else:
             spawner_nfs_opts = os.environ.get("SPAWNER_PERSISTENCE_NFS_OPTS", ",rw,nfsvers=4,async")
         if not spawner_nfs_opts.startswith(","):
             spawner_nfs_opts = "," + spawner_nfs_opts
-        mounts = [
+        default_mounts = [
             {
                 "type": "volume",
                 "target": notebook_dir,
@@ -168,7 +177,7 @@ else:
         spawner_cifs_opts = os.environ.get("SPAWNER_PERSISTENCE_CIFS_OPTS", ",file_mode=0777,dir_mode=0777")
         if not spawner_cifs_opts.startswith(","):
             spawner_cifs_opts = "," + spawner_cifs_opts
-        mounts = [
+        default_mounts = [
             {
                 "type": "volume",
                 "target": notebook_dir,
@@ -185,19 +194,7 @@ else:
             }
         ]
 
-    c.DockerSpawner.mounts = mounts
-
-    def spawner_start_hook(spawner):
-        # username = spawner.user.name
-        mounts = []
-        for mount in spawner.mounts:
-            new_mount = copy.deepcopy(mount)
-            device = spawner.format_volume_name(mount["driver_config"]["options"]["device"],spawner)
-            new_mount["driver_config"]["options"]["device"]=device
-            mounts.append(new_mount)
-        spawner.mounts = mounts
-
-    c.Spawner.pre_spawn_hook = spawner_start_hook
+    c.DockerSpawner.mounts = default_mounts
 
 
 # 限制cpu数
@@ -228,6 +225,7 @@ c.DockerSpawner.poll_interval = int(os.environ.get("SPAWNER_POLL_INTERVAL", "30"
 c.DockerSpawner.start_timeout = int(os.environ.get("SPAWNER_START_TIMEOUT", "120"))
 # docker容器启动的时候是否要使用gpu,使用几个gpu,如果不填则表示不使用gpu
 DockerSpawner_use_gpus = os.environ.get("SPAWNER_USE_GPUS", "").lower()
+default_extra_host_config = {}
 if DockerSpawner_use_gpus:
     DockerSpawner_use_gpus_count = 0
     DockerSpawner_use_gpus_device_ids = []
@@ -244,7 +242,8 @@ if DockerSpawner_use_gpus:
 
     if _use_gpus:
         if DockerSpawner_use_gpus_count != 0:
-            c.DockerSpawner.extra_host_config = {
+
+            default_extra_host_config = {
                 "device_requests": [
                     docker.types.DeviceRequest(
                         count=DockerSpawner_use_gpus_count,
@@ -253,7 +252,7 @@ if DockerSpawner_use_gpus:
                 ],
             }
         else:
-            c.DockerSpawner.extra_host_config = {
+            default_extra_host_config = {
                 "device_requests": [
                     docker.types.DeviceRequest(
                         device_ids=DockerSpawner_use_gpus_device_ids,
@@ -261,6 +260,119 @@ if DockerSpawner_use_gpus:
                     ),
                 ],
             }
+        c.DockerSpawner.extra_host_config = default_extra_host_config
+
+# 条件镜像
+constraint_images = os.environ.get('SPAWNER_CONSTRAINT_IMAGES')
+constraint_image_map = {}
+
+if constraint_images:
+    constraint_image_list = constraint_images.split(";")
+    for constraint_image in constraint_image_list:
+        constraint_image_info = constraint_image.split("->")
+        if len(constraint_image_info) == 2:
+            suffix, image = constraint_image_info
+            constraint_image_map[suffix] = {"image": image}
+        else:
+            raise AttributeError("SPAWNER_CONSTRAINT_IMAGES syntax error")
+
+# 条件启动gpu设置
+constraint_gpus = os.environ.get('SPAWNER_CONSTRAINT_WITH_GPUS')
+constraint_gpu_map = {}
+
+if constraint_gpus:
+    constraint_gpu_list = constraint_gpus.split(";")
+    for constraint_gpu in constraint_gpu_list:
+        constraint_gpu_info = constraint_gpu.split("->")
+        if len(constraint_gpu_info) == 2:
+            suffix, gpu_setting = constraint_gpu_info
+            use_gpus_count = 0
+            use_gpus_device_id = ""
+            _use_gpus = False
+            if gpu_setting.lower() == "all":
+                use_gpus_count = -1
+                _use_gpus = True
+            elif gpu_setting.isdigit():
+                use_gpus_count = int(gpu_setting)
+                _use_gpus = True
+            elif gpu_setting.lower().startswith("device_ids="):
+                use_gpus_device_ids = [i.strip() for i in gpu_setting.replace("device_ids=", "").split(",")]
+                _use_gpus = True
+            else:
+                raise AttributeError("SPAWNER_CONSTRAINT_WITH_GPUS gpu setting syntax error")
+
+            if _use_gpus:
+                if DockerSpawner_use_gpus_count != 0:
+
+                    extra_host_config = {
+                        "device_requests": [
+                            docker.types.DeviceRequest(
+                                count=DockerSpawner_use_gpus_count,
+                                capabilities=[["gpu"]],
+                            ),
+                        ],
+                    }
+                else:
+                    extra_host_config = {
+                        "device_requests": [
+                            docker.types.DeviceRequest(
+                                device_ids=DockerSpawner_use_gpus_device_ids,
+                                capabilities=[["gpu"]],
+                            ),
+                        ],
+                    }
+
+                constraint_gpu_map[suffix] = extra_host_config
+
+            else:
+                raise AttributeError("SPAWNER_CONSTRAINT_WITH_GPUS need setting")
+        else:
+            raise AttributeError("SPAWNER_CONSTRAINT_WITH_GPUS syntax error")
+
+logger = logging.getLogger('pre_spawn_hook_logger')
+logger.setLevel(logging.DEBUG)
+
+
+def spawner_start_hook(spawner):
+    username = spawner.user.name
+    logger.debug(f'spawner_start_hook for {username} start')
+    user_name_suffix = username.split("-")[-1]
+
+    # 挂载mount
+    spawner.volumes = default_volumes
+    # if default_mounts:
+    spawner.mounts = default_mounts
+    mounts = []
+    for mount in spawner.mounts:
+        new_mount = copy.deepcopy(mount)
+        # find device
+        if mount.get("driver_config") and mount["driver_config"].get("options") and mount["driver_config"]["options"].get("device"):
+            device = spawner.format_volume_name(mount["driver_config"]["options"]["device"], spawner)
+            new_mount["driver_config"]["options"]["device"] = device
+        mounts.append(new_mount)
+    spawner.mounts = mounts
+    logger.debug(f'spawner_start_hook format device name ok mounts: \n {spawner.mounts} \n volumes: \n {spawner.volumes}')
+    # constraint_image
+    spawner.image = default_image
+    if constraint_image_map:
+        constraint_image_info = constraint_image_map.get(user_name_suffix)
+        if constraint_image_info:
+            spawner.image = constraint_image_info["image"]
+    logger.debug(f'spawner_start_hook user {username} set_image ok,image: {spawner.image} \n')
+
+    # constraint_gpu
+    # if default_extra_host_config:
+    spawner.extra_host_config = default_extra_host_config
+
+    if constraint_gpu_map:
+        constraint_gpu_info = constraint_gpu_map.get(user_name_suffix)
+        if constraint_gpu_info:
+            spawner.extra_host_config = constraint_gpu_info
+    logger.debug(f'spawner_start_hook user {username} set_gpu ok, with extra_host_config \n { spawner.extra_host_config }')
+    logger.debug('spawner_start_hook ok')
+
+
+c.Spawner.pre_spawn_hook = spawner_start_hook
 # 用户认证相关设置
 # 指定认证类型
 c.JupyterHub.authenticator_class = 'nativeauthenticator.NativeAuthenticator'

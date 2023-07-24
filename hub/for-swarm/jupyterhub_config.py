@@ -24,7 +24,7 @@
 
 > SPAWNER设置
 
-+ SPAWNER_NOTEBOOK_IMAGE: 默认值`jupyter/base-notebook:notebook-6.5.4`,指定SPAWNER拉起作为notebook执行器的容器使用的镜像
++ SPAWNER_NOTEBOOK_IMAGE: 默认值`jupyter/base-notebook:notebook-6.5.4`,指定SPAWNER默认拉起作为notebook执行器的容器使用的镜像
 + SPAWNER_PULL_POLICY: 默认值`ifnotpresent`,枚举类型,指定拉取NOTEBOOK_IMAGE使用的策略,可选的有:
     + `ifnotpresent`-如果没有就拉取
     + `always`-总是检查更新并拉取
@@ -51,10 +51,12 @@
 + SPAWNER_CONSECUTIVE_FAILURE_LIMIT: 默认0,Spawner关闭与hub连接前允许的最大故障数,0表示不限制
 + SPAWNER_POLL_INTERVAL: 默认30, 轮询Spawner的间隔,单位s
 + SPAWNER_START_TIMEOUT: 默认120,单用户容器启动最大等待时间,单位s
-+ SPAWNER_USE_GPUS: 选填,spawner对应的容器是否需要使用gpu,使用几个gpu,可以为正整数或为-1或者all,也可以使用`device_id=xxx`指定使用的gpu设备号
++ SPAWNER_USE_GPUS: 选填,默认不使用spawner对应的容器是否默认需要使用gpu,使用几个gpu,可以为正整数或为-1或者all,也可以使用`device_id=xxx`指定使用的gpu设备号
 + SPAWNER_CONSTRAINTS: 选填,spawner对应的容器的部署位置限制,以`,`隔开限制
 + SPAWNER_PREFERENCE: 选填,spawner对应的容器的部署优先策略,以`,`隔开策略,每条策略形式为`策略:标签`
 + SPAWNER_PLATFORM: 选填,spawner对应的容器部署的平台限制,以`,`隔开限制,每条限制形式为`arch:os`
++ SPAWNER_CONSTRAINT_IMAGES: 选填,有值则生效,根据用户名的后缀确定部署镜像和限制,形式如`后缀1[:限制1,限制2,...]->镜像名1;后缀2[:限制3,限制4...]->镜像名2...`当登录用户用户名有后缀`-后缀1`时会使用镜像1而非默认镜像构造容器,部署时如果有设置限制则也会增加限制
++ SPAWNER_CONSTRAINT_WITH_GPUS: 选填,当SPAWNER_CONSTRAINT_IMAGES生效时可以生效,指定后缀是否使用gpu,gpu设置语法与SPAWNER_USE_GPUS一致,形式如`后缀1->gpu设置1;....`
 
 > AUTH设置
 
@@ -68,6 +70,7 @@
 """
 import os
 import copy
+import logging
 
 c = get_config()   # noqa: F821
 
@@ -125,7 +128,9 @@ c.JupyterHub.init_spawners_timeout = int(os.environ.get("HUB_INIT_SPAWNERS_TIMEO
 # 指定使用docker spawner
 c.JupyterHub.spawner_class = "dockerspawner.SwarmSpawner"
 # 指定Spawner容器使用的镜像
-c.DockerSpawner.image = os.environ.get("SPAWNER_NOTEBOOK_IMAGE", 'jupyter/base-notebook:notebook-6.5.4')
+
+default_image = os.environ.get("SPAWNER_NOTEBOOK_IMAGE", 'jupyter/base-notebook:notebook-6.5.4')
+c.DockerSpawner.image = default_image
 # 指定镜像的拉取模式,可选的有
 # + `ifnotpresent`-如果没有就拉取
 # + `always`-总是检查更新并拉取
@@ -149,8 +154,9 @@ spawner_volume_type = os.environ.get('SPAWNER_PERSISTENCE_VOLUME_TYPE', 'local')
 
 if spawner_volume_type not in supported_volume_types:
     raise AttributeError(f"need to set SPAWNER_PERSISTENCE_VOLUME_TYPE in {supported_volume_types}")
+default_mounts = []
 if spawner_volume_type == "local":
-    mounts = [
+    default_mounts = [
         {
             "type": "volume",
             "target": f"{notebook_dir}/persistence",
@@ -172,7 +178,7 @@ else:
             spawner_nfs_opts = os.environ.get("SPAWNER_PERSISTENCE_NFS_OPTS", ",rw,nfsvers=4,async")
         if not spawner_nfs_opts.startswith(","):
             spawner_nfs_opts = "," + spawner_nfs_opts
-        mounts = [
+        default_mounts = [
             {
                 "type": "volume",
                 "target": notebook_dir,
@@ -196,7 +202,7 @@ else:
         spawner_cifs_opts = os.environ.get("SPAWNER_PERSISTENCE_CIFS_OPTS", ",file_mode=0777,dir_mode=0777")
         if not spawner_cifs_opts.startswith(","):
             spawner_cifs_opts = "," + spawner_cifs_opts
-        mounts = [
+        default_mounts = [
             {
                 "type": "volume",
                 "target": notebook_dir,
@@ -214,31 +220,8 @@ else:
         ]
 
 
-def spawner_start_hook(spawner):
-    # username = spawner.user.name
-    print("spawner_start_hook start")
-    mounts = []
-    old_mounts = spawner.extra_container_spec.get("mounts")
-    if old_mounts:
-        for mount in old_mounts:
-            new_mount = copy.deepcopy(mount)
-            # find source and target
-            new_mount["source"] = spawner.format_volume_name((mount["source"]), spawner)
-            new_mount["target"] = spawner.format_volume_name((mount["target"]), spawner)
-            # find device
-            if mount.get("driver_config") and mount["driver_config"].get("options") and mount["driver_config"]["options"].get("device"):
-                device = spawner.format_volume_name(mount["driver_config"]["options"]["device"], spawner)
-                new_mount["driver_config"]["options"]["device"] = device
-            mounts.append(new_mount)
-        spawner.extra_container_spec["mounts"] = mounts
-        print("spawner_start_hook format device name ok")
-    print("spawner_start_hook ok")
-
-
-c.Spawner.pre_spawn_hook = spawner_start_hook
-
 c.SwarmSpawner.extra_container_spec = {
-    'mounts': mounts
+    'mounts': default_mounts
 }
 # 限制cpu数
 c.SwarmSpawner.cpu_limit = float(os.environ.get('SPAWNER_CPU_LIMIT', '2'))
@@ -279,6 +262,7 @@ c.SwarmSpawner.poll_interval = int(os.environ.get("SPAWNER_POLL_INTERVAL", "30")
 c.SwarmSpawner.start_timeout = int(os.environ.get("SPAWNER_START_TIMEOUT", "120"))
 # dockerservice启动的时候是否要使用gpu,使用几个gpu,如果不填则表示不使用gpu
 SwarmSpawner_use_gpus = os.environ.get("SPAWNER_USE_GPUS", "").lower()
+default_extra_resources_spec = {}
 if SwarmSpawner_use_gpus:
     SwarmSpawner_use_gpus_count = 0
     SwarmSpawner_use_gpus_device_id = ""
@@ -294,30 +278,162 @@ if SwarmSpawner_use_gpus:
         _use_gpus = True
     if _use_gpus:
         if DockerSpawner_use_gpus_count != 0:
-            c.SwarmSpawner.extra_resources_spec = {
+            default_extra_resources_spec = {
                 "generic_resources": {
                     'gpu': DockerSpawner_use_gpus_count
                 }
             }
         else:
-            c.SwarmSpawner.extra_resources_spec = {
+            default_extra_resources_spec = {
                 "generic_resources": {
                     'gpu': SwarmSpawner_use_gpus_device_id
                 }
             }
+        c.SwarmSpawner.extra_resources_spec = default_extra_resources_spec
 # 指定docker service的部署位置策略
 SwarmSpawner_constraints = os.environ.get('SPAWNER_CONSTRAINTS')
 SwarmSpawner_preferences = os.environ.get('SPAWNER_PREFERENCE')
 SwarmSpawner_platforms = os.environ.get('SPAWNER_PLATFORM')
+default_extra_placement_spec: dict[str, list[str | tuple[str, str]]] = {}
 if any([SwarmSpawner_constraints, SwarmSpawner_preferences, SwarmSpawner_platforms]):
-    extra_placement_spec: dict[str, list[str | tuple[str, str]]] = {}
     if SwarmSpawner_constraints:
-        extra_placement_spec["constraints"] = [i.strip() for i in SwarmSpawner_constraints.split(",")]
+        default_extra_placement_spec["constraints"] = [i.strip() for i in SwarmSpawner_constraints.split(",")]
     if SwarmSpawner_preferences:
-        extra_placement_spec["preferences"] = [(i.strip().split(":")[0].strip(), i.strip().split(":")[1].strip()) for i in SwarmSpawner_preferences.split(",")]
+        default_extra_placement_spec["preferences"] = [(i.strip().split(":")[0].strip(), i.strip().split(":")[1].strip()) for i in SwarmSpawner_preferences.split(",")]
     if SwarmSpawner_platforms:
-        extra_placement_spec["platforms"] = [(i.strip().split(":")[0].strip(), i.strip().split(":")[1].strip()) for i in SwarmSpawner_platforms.split(",")]
-    c.SwarmSpawner.extra_placement_spec = extra_placement_spec
+        default_extra_placement_spec["platforms"] = [(i.strip().split(":")[0].strip(), i.strip().split(":")[1].strip()) for i in SwarmSpawner_platforms.split(",")]
+    c.SwarmSpawner.extra_placement_spec = default_extra_placement_spec
+
+# 条件镜像
+constraint_images = os.environ.get('SPAWNER_CONSTRAINT_IMAGES')
+constraint_image_map = {}
+
+if constraint_images:
+    constraint_image_list = constraint_images.split(";")
+    for constraint_image in constraint_image_list:
+        constraint_image_info = constraint_image.split("->")
+        if len(constraint_image_info) == 2:
+            constraint_info, image = constraint_image_info
+            constraint_info_list = constraint_info.split(":")
+            if len(constraint_info_list) == 1:
+                suffix = constraint_info[0]
+                constraint_image_map[suffix] = {"image": image}
+            elif len(constraint_info_list) == 2:
+                suffix, constraints = constraint_info_list
+                constraint_list = [i.strip() for i in constraints.split(",")]
+                constraint_image_map[suffix] = {"image": image, "constraint_list": constraint_list}
+            else:
+                raise AttributeError("SPAWNER_CONSTRAINT_IMAGES syntax error")
+        else:
+            raise AttributeError("SPAWNER_CONSTRAINT_IMAGES syntax error")
+
+
+# 条件启动gpu设置
+constraint_gpus = os.environ.get('SPAWNER_CONSTRAINT_WITH_GPUS')
+constraint_gpu_map = {}
+
+if constraint_gpus:
+    constraint_gpu_list = constraint_gpus.split(";")
+    for constraint_gpu in constraint_gpu_list:
+        constraint_gpu_info = constraint_gpu.split("->")
+        if len(constraint_gpu_info) == 2:
+            suffix, gpu_setting = constraint_gpu_info
+            use_gpus_count = 0
+            use_gpus_device_id = ""
+            _use_gpus = False
+            if gpu_setting.lower() == "all":
+                use_gpus_count = -1
+                _use_gpus = True
+            elif gpu_setting.isdigit():
+                use_gpus_count = int(gpu_setting)
+                _use_gpus = True
+            elif gpu_setting.lower().startswith("device_id="):
+                use_gpus_device_id = gpu_setting.replace("device_id=", "").strip()
+                _use_gpus = True
+            else:
+                raise AttributeError("SPAWNER_CONSTRAINT_WITH_GPUS gpu setting syntax error")
+            if _use_gpus:
+                if DockerSpawner_use_gpus_count != 0:
+                    extra_resources_spec = {
+                        "generic_resources": {
+                            'gpu': use_gpus_count
+                        }
+                    }
+                else:
+                    extra_resources_spec = {
+                        "generic_resources": {
+                            'gpu': use_gpus_device_id
+                        }
+                    }
+                constraint_gpu_map[suffix] = extra_resources_spec
+
+            else:
+                raise AttributeError("SPAWNER_CONSTRAINT_WITH_GPUS need setting")
+        else:
+            raise AttributeError("SPAWNER_CONSTRAINT_WITH_GPUS syntax error")
+
+# 创建 logger 对象
+logger = logging.getLogger('pre_spawn_hook_logger')
+logger.setLevel(logging.DEBUG)
+
+
+def spawner_start_hook(spawner):
+    username = spawner.user.name
+    logger.debug(f'spawner_start_hook for {username} start')
+    user_name_suffix = username.split("-")[-1]
+    # 挂载mount
+    mounts = []
+    old_mounts = default_mounts
+    if old_mounts:
+        for mount in old_mounts:
+            new_mount = copy.deepcopy(mount)
+            # find source and target
+            new_mount["source"] = spawner.format_volume_name((mount["source"]), spawner)
+            new_mount["target"] = spawner.format_volume_name((mount["target"]), spawner)
+            # find device
+            if mount.get("driver_config") and mount["driver_config"].get("options") and mount["driver_config"]["options"].get("device"):
+                device = spawner.format_volume_name(mount["driver_config"]["options"]["device"], spawner)
+                new_mount["driver_config"]["options"]["device"] = device
+            mounts.append(new_mount)
+        spawner.extra_container_spec["mounts"] = mounts
+    logger.debug(f'spawner_start_hook format device name ok mounts: \n {mounts}')
+
+    # constraint_image
+    spawner.image = default_image
+    # if default_extra_placement_spec:
+    spawner.extra_placement_spec = default_extra_placement_spec
+    if constraint_image_map:
+        constraint_image_info = constraint_image_map.get(user_name_suffix)
+        if constraint_image_info:
+            if constraint_image_info.get("constraint_list"):
+                if spawner.extra_placement_spec:
+                    if spawner.extra_placement_spec.get("constraints"):
+                        spawner.extra_placement_spec["constraints"] += constraint_image_info["constraint_list"]
+                    else:
+                        spawner.extra_placement_spec = {
+                            "constraints": constraint_image_info["constraint_list"]
+                        }
+                else:
+                    spawner.extra_placement_spec = {
+                        "constraints": constraint_image_info["constraint_list"]
+                    }
+            spawner.image = constraint_image_info["image"]
+
+    logger.debug(f'spawner_start_hook user {username} set_image ok,image: {spawner.image} \n with placement_spec \n { spawner.extra_placement_spec }')
+
+    # constraint_gpu
+    # if default_extra_resources_spec:
+    spawner.extra_resources_spec = default_extra_resources_spec
+
+    if constraint_gpu_map:
+        constraint_gpu_info = constraint_gpu_map.get(user_name_suffix)
+        if constraint_gpu_info:
+            spawner.extra_resources_spec = constraint_gpu_info
+    logger.debug(f'spawner_start_hook user {username} set_gpu ok, with resources_spec \n { spawner.extra_resources_spec }')
+    logger.debug('spawner_start_hook ok')
+
+
+c.Spawner.pre_spawn_hook = spawner_start_hook
 
 # 用户认证相关设置
 # 指定认证类型
