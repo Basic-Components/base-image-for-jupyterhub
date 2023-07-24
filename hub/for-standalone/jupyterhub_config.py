@@ -27,8 +27,11 @@
 + SPAWNER_NETWORK_NAME: 必填,指定使用的docker network名
 + SPAWNER_NOTEBOOK_DIR: 默认`/home/jovyan/work`,指定notebook容器中notebook存放路径,不建议修改
 + SPAWNER_PERSISTENCE_VOLUME_TYPE: 默认`local`,notebook服务保存的文件存放的位置类型,支持"local", "nfs3", "nfs4", "cifs"四种类型
++ SPAWNER_PERSISTENCE_VOLUME_SOURCE_NAME: 默认`jupyterhub-user-{username}`,挂载的volume名字,也就是source名
++ SPAWNER_PERSISTENCE_VOLUME_TARGET_SUBPATH: 默认`/persistence`,挂载的volume在容器中的路径,完整路径为`{SPAWNER_NOTEBOOK_DIR}{SPAWNER_PERSISTENCE_VOLUME_TARGET_SUBPATH}`
+
 + SPAWNER_PERSISTENCE_NFS_HOST: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器的地址,比如`10.0.0.10`
-+ SPAWNER_PERSISTENCE_NFS_DEVICE: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器上的路径,比如`:/var/docker-nfs`
++ SPAWNER_PERSISTENCE_NFS_DEVICE: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器上的路径,比如`:/var/docker-nfs`,可以在其中设置`{username}`,它将在构造镜像时替换为用户的名称
 + SPAWNER_PERSISTENCE_NFS_OPTS: 选填,如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则生效,nfs3时默认值为`,rw,vers=3,nolock,soft`;nfs4时默认值为`,rw,nfsvers=4,async`,指定nfs连接的配置项
 + SPAWNER_PERSISTENCE_CIFS_HOST: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为cifs则必填,指定cifs服务器的地址,比如`uxxxxx.your-server.de`
 + SPAWNER_PERSISTENCE_CIFS_DEVICE: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为cifs则必填,指定cifs服务器上的路径,比如`//uxxxxx.your-server.de/backup`
@@ -139,6 +142,11 @@ else:
 notebook_dir = os.environ.get('SPAWNER_NOTEBOOK_DIR', '/home/jovyan/work')
 c.DockerSpawner.notebook_dir = notebook_dir
 
+
+persistence_source_name = os.environ.get("SPAWNER_PERSISTENCE_VOLUME_SOURCE_NAME", "jupyterhub-user-{username}")
+persistence_target_subpath = os.environ.get("SPAWNER_PERSISTENCE_VOLUME_TARGET_SUBPATH", "/persistence")
+persistence_target = f"{notebook_dir}{persistence_target_subpath}"
+
 # 设置容器存储的位置,支持local,nfs3,nfs4,cifs
 supported_volume_types = ["local", "nfs3", "nfs4", "cifs"]
 spawner_volume_type = os.environ.get('SPAWNER_PERSISTENCE_VOLUME_TYPE', 'local')
@@ -149,7 +157,7 @@ if spawner_volume_type not in supported_volume_types:
 default_mounts = []
 default_volumes = {}
 if spawner_volume_type == "local":
-    default_volumes = {'jupyterhub-user-{username}': f"{notebook_dir}/persistence"}
+    default_volumes = {persistence_source_name: persistence_target}
     c.DockerSpawner.volumes = default_volumes
 else:
     if spawner_volume_type in ("nfs3", "nfs4"):
@@ -168,8 +176,8 @@ else:
         default_mounts = [
             {
                 "type": "volume",
-                "target": notebook_dir,
-                "source": "jupyterhub-user-{username}",
+                "target": persistence_target,
+                "source": persistence_source_name,
                 "no_copy": True,
                 "driver_config": {
                     'name': 'local',
@@ -192,8 +200,8 @@ else:
         default_mounts = [
             {
                 "type": "volume",
-                "target": notebook_dir,
-                "source": "jupyterhub-user-{username}",
+                "target": persistence_target,
+                "source": persistence_source_name,
                 "no_copy": True,
                 "driver_config": {
                     'name': 'local',

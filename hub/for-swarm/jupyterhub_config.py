@@ -1,6 +1,7 @@
 """jupyterhub的配置项
 
 可以使用环境变量设置的项目包括
+
 > 外部代理设置
 
 + PROXY_SHOULD_START: 默认True,执行容器是否要外接proxy,如果为True则不外接
@@ -33,6 +34,8 @@
 + SPAWNER_NETWORK_NAME: 必填,指定使用的docker network名
 + SPAWNER_NOTEBOOK_DIR: 默认`/home/jovyan/work`,指定notebook容器中notebook存放路径,不建议修改
 + SPAWNER_PERSISTENCE_VOLUME_TYPE: 默认`local`,notebook服务保存的文件存放的位置类型,支持"local", "nfs3", "nfs4", "cifs"四种类型
++ SPAWNER_PERSISTENCE_VOLUME_SOURCE_NAME: 默认`jupyterhub-user-{username}`,挂载的volume名字,也就是source名
++ SPAWNER_PERSISTENCE_VOLUME_TARGET_SUBPATH: 默认`/persistence`,挂载的volume在容器中的路径,完整路径为`{SPAWNER_NOTEBOOK_DIR}{SPAWNER_PERSISTENCE_VOLUME_TARGET_SUBPATH}`
 + SPAWNER_PERSISTENCE_NFS_HOST: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器的地址,比如`10.0.0.10`
 + SPAWNER_PERSISTENCE_NFS_DEVICE: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器上的路径,比如`:/var/docker-nfs`
 + SPAWNER_PERSISTENCE_NFS_OPTS: 选填,如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则生效,nfs3时默认值为`,rw,vers=3,nolock,soft`;nfs4时默认值为`,rw,nfsvers=4,async`,指定nfs连接的配置项
@@ -160,8 +163,13 @@ else:
     raise AttributeError("need to set environ DOCKER_NETWORK_NAME")
 # 设置Spawner容器存储
 notebook_dir = os.environ.get('SPAWNER_NOTEBOOK_DIR', '/home/jovyan/work')
+
 c.SwarmSpawner.notebook_dir = notebook_dir
+
 # 设置容器存储的位置,支持local,nfs3,nfs4,cifs
+persistence_source_name = os.environ.get("SPAWNER_PERSISTENCE_VOLUME_SOURCE_NAME", "jupyterhub-user-{username}")
+persistence_target_subpath = os.environ.get("SPAWNER_PERSISTENCE_VOLUME_TARGET_SUBPATH", "/persistence")
+persistence_target = f"{notebook_dir}{persistence_target_subpath}"
 supported_volume_types = ["local", "nfs3", "nfs4", "cifs"]
 spawner_volume_type = os.environ.get('SPAWNER_PERSISTENCE_VOLUME_TYPE', 'local')
 
@@ -172,8 +180,8 @@ if spawner_volume_type == "local":
     default_mounts = [
         {
             "type": "volume",
-            "target": f"{notebook_dir}/persistence",
-            "source": "jupyterhub-user-{username}",
+            "target": persistence_target,
+            "source": persistence_source_name,
             "no_copy": True
         }
     ]
@@ -194,8 +202,8 @@ else:
         default_mounts = [
             {
                 "type": "volume",
-                "target": notebook_dir,
-                "source": "jupyterhub-user-{username}",
+                "target": persistence_target,
+                "source": persistence_source_name,
                 "no_copy": True,
                 "driver_config": {
                     'name': 'local',
@@ -218,8 +226,8 @@ else:
         default_mounts = [
             {
                 "type": "volume",
-                "target": notebook_dir,
-                "source": "jupyterhub-user-{username}",
+                "target": persistence_target,
+                "source": persistence_source_name,
                 "no_copy": True,
                 "driver_config": {
                     'name': 'local',
