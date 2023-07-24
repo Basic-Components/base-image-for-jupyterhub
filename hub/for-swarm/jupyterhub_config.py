@@ -72,6 +72,19 @@ import os
 import copy
 import logging
 
+# 创建 logger 对象
+logger = logging.getLogger('pre_spawn_hook_logger')
+logger.setLevel(logging.DEBUG)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+
+# 设置日志输出格式
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+
+# 将处理器添加到 logger
+logger.addHandler(console_handler)
+
 c = get_config()   # noqa: F821
 
 # proxy设置
@@ -371,10 +384,6 @@ if constraint_gpus:
                 raise AttributeError("SPAWNER_CONSTRAINT_WITH_GPUS need setting")
         else:
             raise AttributeError("SPAWNER_CONSTRAINT_WITH_GPUS syntax error")
-
-# 创建 logger 对象
-logger = logging.getLogger('pre_spawn_hook_logger')
-logger.setLevel(logging.DEBUG)
 
 
 def spawner_start_hook(spawner):
