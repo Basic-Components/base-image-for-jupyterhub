@@ -14,4 +14,6 @@ RUN pip --no-cache-dir install statsmodels
 RUN pip --no-cache-dir install pingouin
 RUN pip --no-cache-dir install networkx
 RUN pip --no-cache-dir install huggingface_hub
+RUN pip --no-cache-dir install joblib
+RUN pip --no-cache-dir install scikeras
 # COPY torch.ipynb /home/jovyan/work/examples/torch.ipynb

@@ -1,49 +1,5 @@
 ARG NOTEBOOK_VERSION
-FROM --platform=$TARGETPLATFORM jupyter/base-notebook:notebook-$NOTEBOOK_VERSION as base
-# 更换Ubuntu的源
-USER root
-# RUN sed -i "s@http://.*archive.ubuntu.com@https://mirrors.tuna.tsinghua.edu.cn@g" /etc/apt/sources.list
-# RUN sed -i "s@http://.*security.ubuntu.com@https://mirrors.tuna.tsinghua.edu.cn@g" /etc/apt/sources.list
-# 安装c++编译工具
-RUN apt update -y && apt install -y --no-install-recommends \
-    build-essential \
-    ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
-
-USER ${NB_UID}
-# 更换conda的源
-# COPY --chown="${NB_UID}:${NB_GID}" initial-condarc "${CONDA_DIR}/.condarc"
-# # 更换pip源
-# COPY --chown="${NB_UID}:${NB_GID}" pip.conf "${HOME}/.pip/pip.conf"
+FROM --platform=$TARGETPLATFORM hsz1273327/data-analyse-notebook:notebook-$NOTEBOOK_VERSION as base
+RUN conda install --channel conda-forge ta-lib
 # 安装需要的库
-RUN conda install --channel conda-forge fastparquet pyarrow fastavro pygraphviz pydot lxml cython xgboost lightgbm catboost Pillow
-
-RUN pip --no-cache-dir install --upgrade pip
-RUN pip --no-cache-dir install ipywidgets
-RUN pip --no-cache-dir install widgetsnbextension
-RUN pip --no-cache-dir install python-snappy
-RUN pip --no-cache-dir install lz4
-RUN pip --no-cache-dir install boto3
-RUN pip --no-cache-dir install s3fs
-RUN pip --no-cache-dir install psycopg2-binary
-RUN pip --no-cache-dir install peewee
-RUN pip --no-cache-dir install SQLAlchemy
-RUN pip --no-cache-dir install matplotlib
-RUN pip --no-cache-dir install seaborn
-
-RUN pip --no-cache-dir install pandas
-RUN pip --no-cache-dir install thefuzz
-RUN pip --no-cache-dir install pyod
-RUN pip --no-cache-dir install mpmath
-RUN pip --no-cache-dir install scipy
-RUN pip --no-cache-dir install scikit-learn
-RUN pip --no-cache-dir install scikit-image
-RUN pip --no-cache-dir install skforecast
-RUN pip --no-cache-dir install sympy
-RUN pip --no-cache-dir install statsmodels
-RUN pip --no-cache-dir install pingouin
-RUN pip --no-cache-dir install networkx
-RUN pip --no-cache-dir install opencv-python
-
-# # 复制例子
-# COPY conntodata.ipynb /home/jovyan/work/examples/conntodata.ipynb
+RUN pip --no-cache-dir install akshare

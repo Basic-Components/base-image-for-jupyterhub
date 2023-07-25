@@ -18,10 +18,14 @@ ENV TENSORFLOW_VERSION=${TENSORFLOW_VERSION}
 # RUN source $CONDA_DIR/etc/conda/activate.d/env_vars.sh
 
 RUN pip --no-cache-dir install tensorflow==$TENSORFLOW_VERSION
+RUN pip --no-cache-dir install keras-core
+RUN pip --no-cache-dir install keras-cv
+RUN pip --no-cache-dir install keras-nlp
+RUN pip --no-cache-dir install keras-tuner
 RUN pip --no-cache-dir install transformers
 RUN pip --no-cache-dir install datasets
 
-RUN mamba install --channel conda-forge fastparquet pyarrow fastavro pygraphviz pydot lxml cython Pillow
+RUN mamba install --channel conda-forge fastparquet pyarrow fastavro pygraphviz pydot lxml cython Pillow  onnx
 
 RUN pip --no-cache-dir install --upgrade pip
 RUN pip --no-cache-dir install ipywidgets
@@ -31,6 +35,7 @@ RUN pip --no-cache-dir install lz4
 RUN pip --no-cache-dir install boto3
 RUN pip --no-cache-dir install s3fs
 RUN pip --no-cache-dir install psycopg2-binary
+RUN pip --no-cache-dir install pymysql
 RUN pip --no-cache-dir install peewee
 RUN pip --no-cache-dir install SQLAlchemy
 RUN pip --no-cache-dir install matplotlib
@@ -43,5 +48,8 @@ RUN pip --no-cache-dir install scipy
 RUN pip --no-cache-dir install scikit-learn
 RUN pip --no-cache-dir install scikit-image
 RUN pip --no-cache-dir install opencv-python
+RUN pip --no-cache-dir install jieba
+RUN pip --no-cache-dir install tf2onnx
+
 
 # COPY tf.ipynb /home/jovyan/work/examples/tf.ipynb
