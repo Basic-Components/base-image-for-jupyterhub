@@ -1,7 +1,5 @@
 ARG NOTEBOOK_VERSION
-FROM --platform=$TARGETPLATFORM hsz1273327/small-dataset-notebook:notebook-$NOTEBOOK_VERSION as base
+FROM --platform=$TARGETPLATFORM hsz1273327/data-analyse-notebook:notebook-$NOTEBOOK_VERSION as base
 # 安装需要的库
 RUN conda install --channel conda-forge dask
-
-# # 复制例子
-# COPY conntodata.ipynb /home/jovyan/work/examples/conntodata.ipynb
+RUN pip install --no-cache-dir clickhouse-connect

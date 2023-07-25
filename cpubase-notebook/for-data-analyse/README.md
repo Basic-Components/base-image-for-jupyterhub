@@ -9,8 +9,8 @@
 
 > 数据获取
 
-+ peewee
-+ SQLAlchemy
++ peewee(mpysql,pg)
++ SQLAlchemy(mpysql,pg)
 + boto3
 + s3fs
 
@@ -34,6 +34,10 @@
 + thefuzz
 + pyod
 
+> 分词
+
++ jieba
+
 > 基本算法工具
 
 + scipy
@@ -52,13 +56,3 @@
 
 + statsmodels
 + pingouin
-
-> 图计算
-
-+ networkx
-
-> 图像算法
-
-+ scikit-image
-+ opencv-python
-+ Pillow

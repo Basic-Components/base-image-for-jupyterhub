@@ -8,7 +8,7 @@ on:
           required: false
           default: '6.5.4'
 jobs:
-  docker-build-notebook-for-small-dataset:
+  docker-build-notebook-for-data-analyse:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -17,7 +17,7 @@ jobs:
       - name: Prepare
         id: prep
         run: |
-          DOCKER_IMAGE=hsz1273327/small-dataset-notebook
+          DOCKER_IMAGE=hsz1273327/data-analyse-notebook
           SHORTREF=${GITHUB_SHA::8}
           TAGS="${DOCKER_IMAGE}:notebook-${{ inputs.notebook_version }},${DOCKER_IMAGE}:${SHORTREF},${DOCKER_IMAGE}:latest"
           # Set output parameters.
@@ -43,7 +43,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           builder: ${{ steps.buildx.outputs.name }}
-          context: "{{defaultContext}}:cpubase-notebook/for-small-dataset"
+          context: "{{defaultContext}}:cpubase-notebook/for-data-analyse"
           file: dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
@@ -52,7 +52,7 @@ jobs:
 
   docker-build-notebook-for-big-dataset:
     runs-on: ubuntu-latest
-    needs: docker-build-notebook-for-small-dataset
+    needs: docker-build-notebook-for-data-analyse
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -87,6 +87,135 @@ jobs:
         with:
           builder: ${{ steps.buildx.outputs.name }}
           context: "{{defaultContext}}:cpubase-notebook/for-big-dataset"
+          file: dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: NOTEBOOK_VERSION=${{ inputs.notebook_version }}
+          tags: ${{ steps.prep.outputs.tags }}
+
+  docker-build-notebook-for-cv:
+    runs-on: ubuntu-latest
+    needs: docker-build-notebook-for-data-analyse
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Prepare
+        id: prep
+        run: |
+          DOCKER_IMAGE=hsz1273327/cv-notebook
+          SHORTREF=${GITHUB_SHA::8}
+          TAGS="${DOCKER_IMAGE}:notebook-${{ inputs.notebook_version }},${DOCKER_IMAGE}:${SHORTREF},${DOCKER_IMAGE}:latest"
+          # Set output parameters.
+          echo ::set-output name=tags::${TAGS}
+          echo ::set-output name=docker_image::${DOCKER_IMAGE}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@master
+        with:
+          platforms: all
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@master
+
+      - name: Login to DockerHub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PWD }}
+
+      - name: Build
+        uses: docker/build-push-action@v2
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          context: "{{defaultContext}}:cpubase-notebook/for-cv"
+          file: dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: NOTEBOOK_VERSION=${{ inputs.notebook_version }}
+          tags: ${{ steps.prep.outputs.tags }}
+
+  docker-build-notebook-for-graph:
+    runs-on: ubuntu-latest
+    needs: docker-build-notebook-for-data-analyse
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Prepare
+        id: prep
+        run: |
+          DOCKER_IMAGE=hsz1273327/graph-notebook
+          SHORTREF=${GITHUB_SHA::8}
+          TAGS="${DOCKER_IMAGE}:notebook-${{ inputs.notebook_version }},${DOCKER_IMAGE}:${SHORTREF},${DOCKER_IMAGE}:latest"
+          # Set output parameters.
+          echo ::set-output name=tags::${TAGS}
+          echo ::set-output name=docker_image::${DOCKER_IMAGE}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@master
+        with:
+          platforms: all
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@master
+
+      - name: Login to DockerHub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PWD }}
+
+      - name: Build
+        uses: docker/build-push-action@v2
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          context: "{{defaultContext}}:cpubase-notebook/for-graph"
+          file: dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: NOTEBOOK_VERSION=${{ inputs.notebook_version }}
+          tags: ${{ steps.prep.outputs.tags }}
+
+  docker-build-notebook-for-nlp:
+    runs-on: ubuntu-latest
+    needs: docker-build-notebook-for-data-analyse
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Prepare
+        id: prep
+        run: |
+          DOCKER_IMAGE=hsz1273327/nlp-notebook
+          SHORTREF=${GITHUB_SHA::8}
+          TAGS="${DOCKER_IMAGE}:notebook-${{ inputs.notebook_version }},${DOCKER_IMAGE}:${SHORTREF},${DOCKER_IMAGE}:latest"
+          # Set output parameters.
+          echo ::set-output name=tags::${TAGS}
+          echo ::set-output name=docker_image::${DOCKER_IMAGE}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@master
+        with:
+          platforms: all
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@master
+
+      - name: Login to DockerHub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_PWD }}
+
+      - name: Build
+        uses: docker/build-push-action@v2
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          context: "{{defaultContext}}:cpubase-notebook/for-nlp"
           file: dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
