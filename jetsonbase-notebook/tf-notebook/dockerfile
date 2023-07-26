@@ -100,10 +100,10 @@ RUN pip --no-cache-dir install pydot
 RUN pip --no-cache-dir install lxml 
 RUN pip --no-cache-dir install Pillow 
 RUN pip --no-cache-dir install onnx
-RUN pip --no-cache-dir install keras-core
-RUN pip --no-cache-dir install keras-cv
-RUN pip --no-cache-dir install keras-nlp
-RUN pip --no-cache-dir install keras-tuner
+# RUN pip --no-cache-dir install keras-core
+# RUN pip --no-cache-dir install keras-cv
+# RUN pip --no-cache-dir install keras-nlp
+# RUN pip --no-cache-dir install keras-tuner
 RUN pip --no-cache-dir install tf2onnx
 
 
@@ -131,7 +131,8 @@ RUN pip install --no-cache-dir diffusers["torch"]
 RUN pip install --no-cache-dir transformers
 RUN pip --no-cache-dir install datasets
 
-RUN jupyter notebook --generate-config && fix-permissions "/home/${NB_USER}"
+RUN jupyter notebook --generate-config 
+RUN fix-permissions "/home/${NB_USER}"
 ENV JUPYTER_PORT=8888
 EXPOSE $JUPYTER_PORT
 COPY jupyter_server_config.py docker_healthcheck.py /etc/jupyter/

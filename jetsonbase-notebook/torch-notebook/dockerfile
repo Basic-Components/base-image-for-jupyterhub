@@ -127,7 +127,8 @@ RUN pip install --no-cache-dir diffusers["torch"]
 RUN pip install --no-cache-dir transformers
 RUN pip --no-cache-dir install datasets
 
-RUN jupyter notebook --generate-config && fix-permissions "/home/${NB_USER}"
+RUN jupyter notebook --generate-config 
+RUN fix-permissions "/home/${NB_USER}"
 ENV JUPYTER_PORT=8888
 EXPOSE $JUPYTER_PORT
 COPY jupyter_server_config.py docker_healthcheck.py /etc/jupyter/
