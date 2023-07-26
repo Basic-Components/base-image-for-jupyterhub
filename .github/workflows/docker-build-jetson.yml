@@ -30,7 +30,6 @@ on:
 jobs:
   docker-build-torch-notebook:
     runs-on: ubuntu-latest
-    needs: docker-build-base-notebook
     steps:
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
@@ -91,7 +90,6 @@ jobs:
 
   docker-build-tf-notebook:
     runs-on: ubuntu-latest
-    needs: docker-build-base-notebook
     steps:
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
@@ -141,7 +139,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           builder: ${{ steps.buildx.outputs.name }}
-          context: "{{defaultContext}}:gpubase-notebook/tf-notebook"
+          context: "{{defaultContext}}:jetsonbase-notebook/tf-notebook"
           file: dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
