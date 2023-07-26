@@ -1,6 +1,6 @@
 ARG JETPACKR_VERSION
 ARG PTH_VERSION
-FROM --platform=$TARGETPLATFORM nvcr.io/nvidia/l4t-pytorch:r${JETPACKR_VERSION}-pth{$PTH_VERSION}-py3 as base
+FROM --platform=$TARGETPLATFORM nvcr.io/nvidia/l4t-pytorch:r${JETPACKR_VERSION}-pth${PTH_VERSION}-py3 as base
 
 ARG NB_USER="jovyan"
 ARG NB_UID="1000"

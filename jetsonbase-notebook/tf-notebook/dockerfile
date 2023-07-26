@@ -1,6 +1,6 @@
 ARG JETPACKR_VERSION
 ARG TF_VERSION
-FROM --platform=$TARGETPLATFORM nvcr.io/nvidia/l4t-tensorflow:r${JETPACKR_VERSION}-tf{$TF_VERSION}-py3 as base
+FROM --platform=$TARGETPLATFORM nvcr.io/nvidia/l4t-tensorflow:r${JETPACKR_VERSION}-tf${TF_VERSION}-py3 as base
 
 ARG NB_USER="jovyan"
 ARG NB_UID="1000"
