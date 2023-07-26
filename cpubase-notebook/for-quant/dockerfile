@@ -12,7 +12,7 @@ RUN ./configure --prefix=/usr
 RUN make
 RUN make install
 WORKDIR /
-RUN rm /tmp
+RUN rm -rf /tmp
 # 安装需要的库
 USER ${NB_UID}
 WORKDIR "${HOME}"
