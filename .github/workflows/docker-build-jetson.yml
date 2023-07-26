@@ -54,11 +54,9 @@ jobs:
           DOCKER_IMAGE=hsz1273327/jetson-torch-notebook
           SHORTREF=${GITHUB_SHA::8}
           TAGS="${DOCKER_IMAGE}:r${{ inputs.jetpackR__version }}-pth${{ inputs.pth_version }}-notebook${{ inputs.notebook_version }},${DOCKER_IMAGE}:${SHORTREF},${DOCKER_IMAGE}:latest"
-          CU="${{steps.split.outputs._0}}${{ steps.split.outputs._1 }}"
           # Set output parameters.
           echo ::set-output name=tags::${TAGS}
           echo ::set-output name=docker_image::${DOCKER_IMAGE}
-          echo ::set-output name=cu::${CU}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@master
         with:
@@ -106,11 +104,6 @@ jobs:
           large-packages: false
           docker-images: true
           swap-storage: true
-      - uses: jungwinter/split@v2
-        id: split
-        with:
-          msg: ${{ inputs.cuda_version }}
-          separator: '.'
       - name: Checkout
         uses: actions/checkout@v2
       - name: Prepare
