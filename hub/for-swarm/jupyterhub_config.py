@@ -292,16 +292,16 @@ if SwarmSpawner_use_gpus:
         SwarmSpawner_use_gpus_count = -1
         _use_gpus = True
     elif SwarmSpawner_use_gpus.isdigit():
-        DockerSpawner_use_gpus_count = int(SwarmSpawner_use_gpus)
+        SwarmSpawner_use_gpus_count = int(SwarmSpawner_use_gpus)
         _use_gpus = True
     elif SwarmSpawner_use_gpus.startswith("device_id="):
         SwarmSpawner_use_gpus_device_id = SwarmSpawner_use_gpus.replace("device_id=", "").strip()
         _use_gpus = True
     if _use_gpus:
-        if DockerSpawner_use_gpus_count != 0:
+        if SwarmSpawner_use_gpus_count != 0:
             default_extra_resources_spec = {
                 "generic_resources": {
-                    'gpu': DockerSpawner_use_gpus_count
+                    'gpu': SwarmSpawner_use_gpus_count
                 }
             }
         else:
@@ -374,7 +374,7 @@ if constraint_gpus:
             else:
                 raise AttributeError("SPAWNER_CONSTRAINT_WITH_GPUS gpu setting syntax error")
             if _use_gpus:
-                if DockerSpawner_use_gpus_count != 0:
+                if use_gpus_count != 0:
                     extra_resources_spec = {
                         "generic_resources": {
                             'gpu': use_gpus_count
@@ -425,7 +425,7 @@ def spawner_start_hook(spawner):
             if constraint_image_info.get("constraint_list"):
                 if spawner.extra_placement_spec:
                     if spawner.extra_placement_spec.get("constraints"):
-                        spawner.extra_placement_spec["constraints"] += constraint_image_info["constraint_list"]
+                        spawner.extra_placement_spec["constraints"] = constraint_image_info["constraint_list"]
                     else:
                         spawner.extra_placement_spec = {
                             "constraints": constraint_image_info["constraint_list"]
