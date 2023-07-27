@@ -132,6 +132,8 @@ RUN pip install --no-cache-dir diffusers["torch"]
 RUN pip install --no-cache-dir transformers
 RUN pip --no-cache-dir install datasets
 
+ENV PATH="${HOME}/bin:${PATH}"
+
 RUN jupyter notebook --generate-config 
 RUN fix-permissions "/home/${NB_USER}"
 ENV JUPYTER_PORT=8888
