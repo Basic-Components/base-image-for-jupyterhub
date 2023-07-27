@@ -86,10 +86,11 @@ RUN echo "auth requisite pam_deny.so" >> /etc/pam.d/su && \
     fix-permissions "${HOME}"
 
 USER ${NB_UID}
-
+RUN pip install --no-cache-dir jupyter
 RUN pip install --no-cache-dir notebook==$NOTEBOOK_VERSION
 RUN pip install --no-cache-dir jupyterhub==$JUPYTERHUB_VERSION
 RUN pip install --no-cache-dir jupyterlab==$JUPYTERLAB_VERSION
+
 RUN pip --no-cache-dir install ipywidgets
 RUN pip --no-cache-dir install widgetsnbextension
 
