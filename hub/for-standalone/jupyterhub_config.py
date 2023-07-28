@@ -190,7 +190,7 @@ def mountdict2dictwithdriverconf(mount: MountDict) -> MountDictWithConf:
             'device': mount["driver_config"]["options"]["device"],
             'type': mount["driver_config"]["options"]["type"]
         })
-        mountobj = {
+        mountobj: MountDictWithConf = {
             "target": mount["target"],
             "source": mount["source"],
             "type": mount["type"],
