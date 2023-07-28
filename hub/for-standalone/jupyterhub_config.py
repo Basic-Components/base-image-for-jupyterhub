@@ -64,8 +64,9 @@
 # import nativeauthenticator
 import os
 import copy
-import docker
+from docker.types import Mount, DriverConfig, DeviceRequest
 import logging
+from typing import TypedDict, List
 # 创建 logger 对象
 logger = logging.getLogger('pre_spawn_hook_logger')
 logger.setLevel(logging.DEBUG)
@@ -154,7 +155,59 @@ spawner_volume_type = os.environ.get('SPAWNER_PERSISTENCE_VOLUME_TYPE', 'local')
 if spawner_volume_type not in supported_volume_types:
     raise AttributeError(f"need to set SPAWNER_PERSISTENCE_VOLUME_TYPE in {supported_volume_types}")
 
-default_mounts = []
+
+class DriverConfigOptionsDict(TypedDict):
+    type: str
+    o: str
+    device: str
+
+
+class DriverConfigDict(TypedDict):
+    name: str
+    options: DriverConfigOptionsDict
+
+
+class MountDict(TypedDict, total=False):
+    type: str
+    target: str
+    source: str
+    no_copy: bool
+    driver_config: DriverConfigDict
+
+
+class MountDictWithConf(TypedDict, total=False):
+    type: str
+    target: str
+    source: str
+    no_copy: bool
+    driver_config: DriverConfig
+
+
+def mountdict2dictwithdriverconf(mount: MountDict) -> MountDictWithConf:
+    if mount.get("driver_config"):
+        driver_config = DriverConfig(name=mount["driver_config"]["name"], options={
+            'o': mount["driver_config"]["options"]["o"],
+            'device': mount["driver_config"]["options"]["device"],
+            'type': mount["driver_config"]["options"]["type"]
+        })
+        mountobj = {
+            "target": mount["target"],
+            "source": mount["source"],
+            "type": mount["type"],
+            "no_copy": mount["no_copy"],
+            "driver_config": driver_config,
+        }
+    else:
+        mountobj = {
+            "target": mount["target"],
+            "source": mount["source"],
+            "type": mount["type"],
+            "no_copy": mount["no_copy"]
+        }
+    return mountobj
+
+
+default_mounts: List[MountDict] = []
 default_volumes = {}
 if spawner_volume_type == "local":
     default_volumes = {persistence_source_name: persistence_target}
@@ -163,58 +216,61 @@ else:
     if spawner_volume_type in ("nfs3", "nfs4"):
         spawner_nfs_host = os.environ.get('SPAWNER_PERSISTENCE_NFS_HOST')
         spawner_nfs_device = os.environ.get('SPAWNER_PERSISTENCE_NFS_DEVICE')
-        if not all([spawner_nfs_host, spawner_nfs_device]):
-            raise AttributeError("need to set SPAWNER_PERSISTENCE_NFS_HOST and SPAWNER_PERSISTENCE_NFS_DEVICE")
-        if not spawner_nfs_device.startswith(":"):
-            spawner_nfs_device = ":" + spawner_nfs_device
-        if spawner_volume_type == "nfs3":
-            spawner_nfs_opts = os.environ.get("SPAWNER_PERSISTENCE_NFS_OPTS", ",rw,vers=3,nolock,soft")
-        else:
-            spawner_nfs_opts = os.environ.get("SPAWNER_PERSISTENCE_NFS_OPTS", ",rw,nfsvers=4,async")
-        if not spawner_nfs_opts.startswith(","):
-            spawner_nfs_opts = "," + spawner_nfs_opts
-        default_mounts = [
-            {
-                "type": "volume",
-                "target": persistence_target,
-                "source": persistence_source_name,
-                "no_copy": True,
-                "driver_config": {
-                    'name': 'local',
-                    'options': {
-                        'type': 'nfs',
-                        'o': 'addr=' + spawner_nfs_host + spawner_nfs_opts,
-                        'device': spawner_nfs_device
+        if spawner_nfs_host and spawner_nfs_device:
+            if not spawner_nfs_device.startswith(":"):
+                spawner_nfs_device = ":" + spawner_nfs_device
+            if spawner_volume_type == "nfs3":
+                spawner_nfs_opts = os.environ.get("SPAWNER_PERSISTENCE_NFS_OPTS", ",rw,vers=3,nolock,soft")
+            else:
+                spawner_nfs_opts = os.environ.get("SPAWNER_PERSISTENCE_NFS_OPTS", ",rw,nfsvers=4,async")
+            if not spawner_nfs_opts.startswith(","):
+                spawner_nfs_opts = "," + spawner_nfs_opts
+            default_mounts = [
+                {
+                    "type": "volume",
+                    "target": persistence_target,
+                    "source": persistence_source_name,
+                    "no_copy": True,
+                    "driver_config": {
+                        'name': 'local',
+                        'options': {
+                            'type': 'nfs',
+                            'o': 'addr=' + spawner_nfs_host + spawner_nfs_opts,
+                            'device': spawner_nfs_device
+                        }
                     }
                 }
-            }
-        ]
+            ]
+        else:
+            raise AttributeError("need to set SPAWNER_PERSISTENCE_NFS_HOST and SPAWNER_PERSISTENCE_NFS_DEVICE")
+
     else:
         spawner_cifs_host = os.environ.get('SPAWNER_PERSISTENCE_CIFS_HOST')
         spawner_cifs_device = os.environ.get('SPAWNER_PERSISTENCE_CIFS_DEVICE')
-        if not all([spawner_cifs_host, spawner_cifs_device]):
-            raise AttributeError("need to set SPAWNER_PERSISTENCE_CIFS_HOST and SPAWNER_PERSISTENCE_CIFS_DEVICE")
-        spawner_cifs_opts = os.environ.get("SPAWNER_PERSISTENCE_CIFS_OPTS", ",file_mode=0777,dir_mode=0777")
-        if not spawner_cifs_opts.startswith(","):
-            spawner_cifs_opts = "," + spawner_cifs_opts
-        default_mounts = [
-            {
-                "type": "volume",
-                "target": persistence_target,
-                "source": persistence_source_name,
-                "no_copy": True,
-                "driver_config": {
-                    'name': 'local',
-                    'options': {
-                        'type': 'nfs',
-                        'o': 'addr=' + spawner_cifs_host + spawner_cifs_opts,
-                        'device': spawner_cifs_device
+        if spawner_cifs_host and spawner_cifs_device:
+            spawner_cifs_opts = os.environ.get("SPAWNER_PERSISTENCE_CIFS_OPTS", ",file_mode=0777,dir_mode=0777")
+            if not spawner_cifs_opts.startswith(","):
+                spawner_cifs_opts = "," + spawner_cifs_opts
+            default_mounts = [
+                {
+                    "type": "volume",
+                    "target": persistence_target,
+                    "source": persistence_source_name,
+                    "no_copy": True,
+                    "driver_config": {
+                        'name': 'local',
+                        'options': {
+                            'type': 'nfs',
+                            'o': 'addr=' + spawner_cifs_host + spawner_cifs_opts,
+                            'device': spawner_cifs_device
+                        }
                     }
                 }
-            }
-        ]
+            ]
+        else:
+            raise AttributeError("need to set SPAWNER_PERSISTENCE_CIFS_HOST and SPAWNER_PERSISTENCE_CIFS_DEVICE")
 
-    c.DockerSpawner.mounts = default_mounts
+    c.DockerSpawner.mounts = [mountdict2dictwithdriverconf(mount) for mount in default_mounts]
 
 
 # 限制cpu数
@@ -265,7 +321,7 @@ if DockerSpawner_use_gpus:
 
             default_extra_host_config = {
                 "device_requests": [
-                    docker.types.DeviceRequest(
+                    DeviceRequest(
                         count=DockerSpawner_use_gpus_count,
                         capabilities=[["gpu"]],
                     ),
@@ -274,7 +330,7 @@ if DockerSpawner_use_gpus:
         else:
             default_extra_host_config = {
                 "device_requests": [
-                    docker.types.DeviceRequest(
+                    DeviceRequest(
                         device_ids=DockerSpawner_use_gpus_device_ids,
                         capabilities=[["gpu"]],
                     ),
@@ -326,7 +382,7 @@ if constraint_gpus:
 
                     extra_host_config = {
                         "device_requests": [
-                            docker.types.DeviceRequest(
+                            DeviceRequest(
                                 count=DockerSpawner_use_gpus_count,
                                 capabilities=[["gpu"]],
                             ),
@@ -335,7 +391,7 @@ if constraint_gpus:
                 else:
                     extra_host_config = {
                         "device_requests": [
-                            docker.types.DeviceRequest(
+                            DeviceRequest(
                                 device_ids=DockerSpawner_use_gpus_device_ids,
                                 capabilities=[["gpu"]],
                             ),
@@ -350,7 +406,7 @@ if constraint_gpus:
             raise AttributeError("SPAWNER_CONSTRAINT_WITH_GPUS syntax error")
 
 
-def spawner_start_hook(spawner):
+def spawner_start_hook(spawner) -> None:
     username = spawner.user.name
     logger.info(f'spawner_start_hook for {username} start')
     user_name_suffix = username.split("-")[-1]
@@ -358,16 +414,16 @@ def spawner_start_hook(spawner):
     # 挂载mount
     spawner.volumes = default_volumes
     # if default_mounts:
-    spawner.mounts = default_mounts
+    spawner.mounts = [mountdict2dictwithdriverconf(mount) for mount in default_mounts]
     mounts = []
-    for mount in spawner.mounts:
+    for mount in default_mounts:
         new_mount = copy.deepcopy(mount)
         # find device
         if mount.get("driver_config") and mount["driver_config"].get("options") and mount["driver_config"]["options"].get("device"):
             device = spawner.format_volume_name(mount["driver_config"]["options"]["device"], spawner)
             new_mount["driver_config"]["options"]["device"] = device
         mounts.append(new_mount)
-    spawner.mounts = mounts
+    spawner.mounts = [mountdict2dictwithdriverconf(mount) for mount in mounts]
     logger.info(f'spawner_start_hook format device name ok mounts: \n {spawner.mounts} \n volumes: \n {spawner.volumes}')
     # constraint_image
     spawner.image = default_image
