@@ -90,6 +90,7 @@ services:
         volumes:
             - "/var/run/docker.sock:/var/run/docker.sock"
             - "jupyterhub-data:/data"
+            - "jupyterhub-notebooks:/notebooks"
         environment:
             HUB_PORT: 8000
             SPAWNER_NETWORK_NAME: jupyterhub_network
@@ -101,6 +102,8 @@ services:
             SPAWNER_PERSISTENCE_NFS_OPTS: ",vers=3,nolock,hard"
 volumes:
     jupyterhub-data:
+
+
 
 networks:
     jupyterhub_network:

@@ -36,11 +36,12 @@
 + SPAWNER_PERSISTENCE_VOLUME_TYPE: 默认`local`,notebook服务保存的文件存放的位置类型,支持"local", "nfs3", "nfs4", "cifs"四种类型
 + SPAWNER_PERSISTENCE_VOLUME_SOURCE_NAME: 默认`jupyterhub-user-{username}`,挂载的volume名字,也就是source名
 + SPAWNER_PERSISTENCE_VOLUME_TARGET_SUBPATH: 默认`/persistence`,挂载的volume在容器中的路径,完整路径为`{SPAWNER_NOTEBOOK_DIR}{SPAWNER_PERSISTENCE_VOLUME_TARGET_SUBPATH}`
++ SPAWNER_PERSISTENCE_VOLUME_MKDIRPATH: 当SPAWNER_PERSISTENCE_VOLUME_TYPE不为`local`时生效, 默认`/jupyterhub_data`,本地挂载的nfs或cifs在容器中的路径,在部署用户镜像前会先在对应路径中创建用户同名文件夹
 + SPAWNER_PERSISTENCE_NFS_HOST: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器的地址,比如`10.0.0.10`
-+ SPAWNER_PERSISTENCE_NFS_DEVICE: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器上的路径,比如`:/var/docker-nfs`
++ SPAWNER_PERSISTENCE_NFS_DEVICE: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器上的路径,比如`:/var/docker-nfs`,真正存放的位置为`SPAWNER_PERSISTENCE_NFS_DEVICE/{username}`
 + SPAWNER_PERSISTENCE_NFS_OPTS: 选填,如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则生效,nfs3时默认值为`,rw,vers=3,nolock,soft`;nfs4时默认值为`,rw,nfsvers=4,async`,指定nfs连接的配置项
 + SPAWNER_PERSISTENCE_CIFS_HOST: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为cifs则必填,指定cifs服务器的地址,比如`uxxxxx.your-server.de`
-+ SPAWNER_PERSISTENCE_CIFS_DEVICE: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为cifs则必填,指定cifs服务器上的路径,比如`//uxxxxx.your-server.de/backup`
++ SPAWNER_PERSISTENCE_CIFS_DEVICE: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为cifs则必填,指定cifs服务器上的路径,比如`//uxxxxx.your-server.de/backup`,真正存放的位置为`SPAWNER_PERSISTENCE_CIFS_DEVICE/{username}`
 + SPAWNER_PERSISTENCE_CIFS_OPTS:  选填,如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为cifs则生效,默认值为`,file_mode=0777,dir_mode=0777`
 + SPAWNER_CPU_LIMIT: 默认`2`,指定notebook容器最大可使用的cpu资源量
 + SPAWNER_CPU_GUARANTEE: 默认`1`,指定notebook容器最低使用的cpu资源量
@@ -75,6 +76,7 @@ import os
 import copy
 import logging
 from typing import TypedDict, List
+from pathlib import Path
 from docker.types import Mount, DriverConfig
 
 # 创建 logger 对象
@@ -178,6 +180,8 @@ spawner_volume_type = os.environ.get('SPAWNER_PERSISTENCE_VOLUME_TYPE', 'local')
 if spawner_volume_type not in supported_volume_types:
     raise AttributeError(f"need to set SPAWNER_PERSISTENCE_VOLUME_TYPE in {supported_volume_types}")
 
+spawner_volume_mkdirpath = os.environ.get("SPAWNER_PERSISTENCE_VOLUME_MKDIRPATH", "/jupyterhub_data")
+
 
 class DriverConfigOptionsDict(TypedDict):
     type: str
@@ -237,6 +241,7 @@ else:
         spawner_nfs_host = os.environ.get('SPAWNER_PERSISTENCE_NFS_HOST')
         spawner_nfs_device = os.environ.get('SPAWNER_PERSISTENCE_NFS_DEVICE')
         if spawner_nfs_host and spawner_nfs_device:
+            spawner_nfs_device += "/{username}"
             if not spawner_nfs_device.startswith(":"):
                 spawner_nfs_device = ":" + spawner_nfs_device
             if spawner_volume_type == "nfs3":
@@ -267,6 +272,7 @@ else:
         spawner_cifs_host = os.environ.get('SPAWNER_PERSISTENCE_CIFS_HOST')
         spawner_cifs_device = os.environ.get('SPAWNER_PERSISTENCE_CIFS_DEVICE')
         if spawner_cifs_host and spawner_cifs_device:
+            spawner_cifs_device += "/{username}"
             spawner_cifs_opts = os.environ.get("SPAWNER_PERSISTENCE_CIFS_OPTS", ",file_mode=0777,dir_mode=0777")
             if not spawner_cifs_opts.startswith(","):
                 spawner_cifs_opts = "," + spawner_cifs_opts
@@ -447,6 +453,14 @@ def spawner_start_hook(spawner):
     username = spawner.user.name
     logger.info(f'spawner_start_hook for {username} start')
     user_name_suffix = username.split("-")[-1]
+    # nas上创建用户目录
+    if spawner_volume_type in ("nfs3", "nfs4", "cifs"):
+        mkdir_path_str = spawner.format_volume_name(spawner_volume_mkdirpath + "/{username}")
+        mkdir_path = Path(mkdir_path_str)
+        if mkdir_path.exists() and not mkdir_path.is_dir():
+            mkdir_path.unlink(True)
+        mkdir_path.mkdir(mode=766, parents=True, exist_ok=True)
+        logger.info(f'spawner_start_hook user {username} mkdir device {mkdir_path}')
     # 挂载mount
     mounts = []
     old_mounts = default_mounts
