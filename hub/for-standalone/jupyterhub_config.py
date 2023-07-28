@@ -424,7 +424,7 @@ def spawner_start_hook(spawner) -> None:
     mounts = []
     # nas上创建用户目录
     if spawner_volume_type in ("nfs3", "nfs4", "cifs"):
-        mkdir_path_str = spawner.format_volume_name(spawner_volume_mkdirpath + "/{username}")
+        mkdir_path_str = spawner.format_volume_name(spawner_volume_mkdirpath + "/{username}", spawner)
         mkdir_path = Path(mkdir_path_str)
         if mkdir_path.exists() and not mkdir_path.is_dir():
             mkdir_path.unlink(True)
