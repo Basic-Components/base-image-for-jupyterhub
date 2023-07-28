@@ -74,6 +74,8 @@
 import os
 import copy
 import logging
+from typing import TypedDict, List
+from docker.types import Mount, DriverConfig
 
 # 创建 logger 对象
 logger = logging.getLogger('pre_spawn_hook_logger')
@@ -175,7 +177,52 @@ spawner_volume_type = os.environ.get('SPAWNER_PERSISTENCE_VOLUME_TYPE', 'local')
 
 if spawner_volume_type not in supported_volume_types:
     raise AttributeError(f"need to set SPAWNER_PERSISTENCE_VOLUME_TYPE in {supported_volume_types}")
-default_mounts = []
+
+
+class DriverConfigOptionsDict(TypedDict):
+    type: str
+    o: str
+    device: str
+
+
+class DriverConfigDict(TypedDict):
+    name: str
+    options: DriverConfigOptionsDict
+
+
+class MountDict(TypedDict, total=False):
+    type: str
+    target: str
+    source: str
+    no_copy: bool
+    driver_config: DriverConfigDict
+
+
+def mountdict2obj(mount: MountDict) -> Mount:
+    if mount.get("driver_config"):
+        driver_config = DriverConfig(name=mount["driver_config"]["name"], options={
+            'o': mount["driver_config"]["options"]["o"],
+            'device': mount["driver_config"]["options"]["device"],
+            'type': mount["driver_config"]["options"]["type"]
+        })
+        mountobj = Mount(
+            target=mount["target"],
+            source=mount["source"],
+            type=mount["type"],
+            no_copy=mount["no_copy"],
+            driver_config=driver_config,
+        )
+    else:
+        mountobj = Mount(
+            target=mount["target"],
+            source=mount["source"],
+            type=mount["type"],
+            no_copy=mount["no_copy"],
+        )
+    return mountobj
+
+
+default_mounts: List[MountDict] = []
 if spawner_volume_type == "local":
     default_mounts = [
         {
@@ -189,60 +236,62 @@ else:
     if spawner_volume_type in ("nfs3", "nfs4"):
         spawner_nfs_host = os.environ.get('SPAWNER_PERSISTENCE_NFS_HOST')
         spawner_nfs_device = os.environ.get('SPAWNER_PERSISTENCE_NFS_DEVICE')
-        if not all([spawner_nfs_host, spawner_nfs_device]):
-            raise AttributeError("need to set SPAWNER_PERSISTENCE_NFS_HOST and SPAWNER_PERSISTENCE_NFS_DEVICE")
-        if not spawner_nfs_device.startswith(":"):
-            spawner_nfs_device = ":" + spawner_nfs_device
-        if spawner_volume_type == "nfs3":
-            spawner_nfs_opts = os.environ.get("SPAWNER_PERSISTENCE_NFS_OPTS", ",rw,vers=3,nolock,soft")
-        else:
-            spawner_nfs_opts = os.environ.get("SPAWNER_PERSISTENCE_NFS_OPTS", ",rw,nfsvers=4,async")
-        if not spawner_nfs_opts.startswith(","):
-            spawner_nfs_opts = "," + spawner_nfs_opts
-        default_mounts = [
-            {
-                "type": "volume",
-                "target": persistence_target,
-                "source": persistence_source_name,
-                "no_copy": True,
-                "driver_config": {
-                    'name': 'local',
-                    'options': {
-                        'type': 'nfs',
-                        'o': 'addr=' + spawner_nfs_host + spawner_nfs_opts,
-                        'device': spawner_nfs_device
+        if spawner_nfs_host and spawner_nfs_device:
+            if not spawner_nfs_device.startswith(":"):
+                spawner_nfs_device = ":" + spawner_nfs_device
+            if spawner_volume_type == "nfs3":
+                spawner_nfs_opts = os.environ.get("SPAWNER_PERSISTENCE_NFS_OPTS", ",rw,vers=3,nolock,soft")
+            else:
+                spawner_nfs_opts = os.environ.get("SPAWNER_PERSISTENCE_NFS_OPTS", ",rw,nfsvers=4,async")
+            if not spawner_nfs_opts.startswith(","):
+                spawner_nfs_opts = "," + spawner_nfs_opts
+            default_mounts = [
+                {
+                    "type": "volume",
+                    "target": persistence_target,
+                    "source": persistence_source_name,
+                    "no_copy": True,
+                    "driver_config": {
+                        'name': 'local',
+                        'options': {
+                            'type': 'nfs',
+                            'o': 'addr=' + spawner_nfs_host + spawner_nfs_opts,
+                            'device': spawner_nfs_device
+                        }
                     }
                 }
-            }
-        ]
+            ]
+        else:
+            raise AttributeError("need to set SPAWNER_PERSISTENCE_NFS_HOST and SPAWNER_PERSISTENCE_NFS_DEVICE")
     else:
         spawner_cifs_host = os.environ.get('SPAWNER_PERSISTENCE_CIFS_HOST')
         spawner_cifs_device = os.environ.get('SPAWNER_PERSISTENCE_CIFS_DEVICE')
-        if not all([spawner_cifs_host, spawner_cifs_device]):
-            raise AttributeError("need to set SPAWNER_PERSISTENCE_CIFS_HOST and SPAWNER_PERSISTENCE_CIFS_DEVICE")
-        spawner_cifs_opts = os.environ.get("SPAWNER_PERSISTENCE_CIFS_OPTS", ",file_mode=0777,dir_mode=0777")
-        if not spawner_cifs_opts.startswith(","):
-            spawner_cifs_opts = "," + spawner_cifs_opts
-        default_mounts = [
-            {
-                "type": "volume",
-                "target": persistence_target,
-                "source": persistence_source_name,
-                "no_copy": True,
-                "driver_config": {
-                    'name': 'local',
-                    'options': {
-                        'type': 'nfs',
-                        'o': 'addr=' + spawner_cifs_host + spawner_cifs_opts,
-                        'device': spawner_cifs_device
+        if spawner_cifs_host and spawner_cifs_device:
+            spawner_cifs_opts = os.environ.get("SPAWNER_PERSISTENCE_CIFS_OPTS", ",file_mode=0777,dir_mode=0777")
+            if not spawner_cifs_opts.startswith(","):
+                spawner_cifs_opts = "," + spawner_cifs_opts
+            default_mounts = [
+                {
+                    "type": "volume",
+                    "target": persistence_target,
+                    "source": persistence_source_name,
+                    "no_copy": True,
+                    "driver_config": {
+                        'name': 'local',
+                        'options': {
+                            'type': 'nfs',
+                            'o': 'addr=' + spawner_cifs_host + spawner_cifs_opts,
+                            'device': spawner_cifs_device
+                        }
                     }
                 }
-            }
-        ]
+            ]
+        else:
+            raise AttributeError("need to set SPAWNER_PERSISTENCE_CIFS_HOST and SPAWNER_PERSISTENCE_CIFS_DEVICE")
 
 
 c.SwarmSpawner.extra_container_spec = {
-    'mounts': default_mounts
+    'mounts': [mountdict2obj(mount) for mount in default_mounts]
 }
 # 限制cpu数
 c.SwarmSpawner.cpu_limit = float(os.environ.get('SPAWNER_CPU_LIMIT', '2'))
@@ -411,9 +460,9 @@ def spawner_start_hook(spawner):
             if mount.get("driver_config") and mount["driver_config"].get("options") and mount["driver_config"]["options"].get("device"):
                 device = spawner.format_volume_name(mount["driver_config"]["options"]["device"], spawner)
                 new_mount["driver_config"]["options"]["device"] = device
-            mounts.append(new_mount)
+            mounts.append(mountdict2obj(new_mount))
         spawner.extra_container_spec["mounts"] = mounts
-    logger.info(f'spawner_start_hook format device name ok mounts: \n {mounts}')
+    logger.info(f'spawner_start_hook user {username} format device name ok mounts: {mounts}')
 
     # constraint_image
     spawner.image = default_image
@@ -436,7 +485,7 @@ def spawner_start_hook(spawner):
                     }
             spawner.image = constraint_image_info["image"]
 
-    logger.info(f'spawner_start_hook user {username} set_image ok,image: {spawner.image} \n with placement_spec \n { spawner.extra_placement_spec }')
+    logger.info(f'spawner_start_hook user {username} set_image ok,image: {spawner.image}  with placement_spec  { spawner.extra_placement_spec }')
 
     # constraint_gpu
     # if default_extra_resources_spec:
@@ -446,7 +495,7 @@ def spawner_start_hook(spawner):
         constraint_gpu_info = constraint_gpu_map.get(user_name_suffix)
         if constraint_gpu_info:
             spawner.extra_resources_spec = constraint_gpu_info
-    logger.info(f'spawner_start_hook user {username} set_gpu ok, with resources_spec \n { spawner.extra_resources_spec }')
+    logger.info(f'spawner_start_hook user {username} set_gpu ok, with resources_spec  { spawner.extra_resources_spec }')
     logger.info('spawner_start_hook ok')
 
 
