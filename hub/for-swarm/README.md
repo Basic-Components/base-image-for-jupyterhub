@@ -13,11 +13,7 @@
 
 ## jupyterhub的配置项
 
-可以使用环境变量设置的项目包括
-
-jupyterhub的配置项
-
-可以使用环境变量设置的项目包括
+以使用环境变量设置的项目包括
 
 > 外部代理设置
 
@@ -53,11 +49,12 @@ jupyterhub的配置项
 + SPAWNER_PERSISTENCE_VOLUME_TYPE: 默认`local`,notebook服务保存的文件存放的位置类型,支持"local", "nfs3", "nfs4", "cifs"四种类型
 + SPAWNER_PERSISTENCE_VOLUME_SOURCE_NAME: 默认`jupyterhub-user-{username}`,挂载的volume名字,也就是source名
 + SPAWNER_PERSISTENCE_VOLUME_TARGET_SUBPATH: 默认`/persistence`,挂载的volume在容器中的路径,完整路径为`{SPAWNER_NOTEBOOK_DIR}{SPAWNER_PERSISTENCE_VOLUME_TARGET_SUBPATH}`
++ SPAWNER_PERSISTENCE_VOLUME_MKDIRPATH: 当SPAWNER_PERSISTENCE_VOLUME_TYPE不为`local`时生效, 默认`/jupyterhub_data`,本地挂载的nfs或cifs在容器中的路径,在部署用户镜像前会先在对应路径中创建用户同名文件夹
 + SPAWNER_PERSISTENCE_NFS_HOST: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器的地址,比如`10.0.0.10`
-+ SPAWNER_PERSISTENCE_NFS_DEVICE: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器上的路径,比如`:/var/docker-nfs`
++ SPAWNER_PERSISTENCE_NFS_DEVICE: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器上的路径,比如`:/var/docker-nfs`,真正存放的位置为`SPAWNER_PERSISTENCE_NFS_DEVICE/{username}`
 + SPAWNER_PERSISTENCE_NFS_OPTS: 选填,如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则生效,nfs3时默认值为`,rw,vers=3,nolock,soft`;nfs4时默认值为`,rw,nfsvers=4,async`,指定nfs连接的配置项
 + SPAWNER_PERSISTENCE_CIFS_HOST: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为cifs则必填,指定cifs服务器的地址,比如`uxxxxx.your-server.de`
-+ SPAWNER_PERSISTENCE_CIFS_DEVICE: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为cifs则必填,指定cifs服务器上的路径,比如`//uxxxxx.your-server.de/backup`
++ SPAWNER_PERSISTENCE_CIFS_DEVICE: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为cifs则必填,指定cifs服务器上的路径,比如`//uxxxxx.your-server.de/backup`,真正存放的位置为`SPAWNER_PERSISTENCE_CIFS_DEVICE/{username}`
 + SPAWNER_PERSISTENCE_CIFS_OPTS:  选填,如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为cifs则生效,默认值为`,file_mode=0777,dir_mode=0777`
 + SPAWNER_CPU_LIMIT: 默认`2`,指定notebook容器最大可使用的cpu资源量
 + SPAWNER_CPU_GUARANTEE: 默认`1`,指定notebook容器最低使用的cpu资源量
@@ -88,7 +85,10 @@ jupyterhub的配置项
 + AUTH_ENABLE_SIGNUP: 默认`True`,是否开放新用户注册
 + AUTH_OPEN_SIGNUP: 默认`False`,是否允许用户注册后未经管理员确认就可以进入使用
 
+
 ## 例子
+
+由于swarm的默认volume不会在各个节点上同步文件,因此推荐使用nfs方式部署.在集群外需要有一个额外的nfs服务器.我们的hub需要连上它为每个新用户创建自己的文件夹保存私有notebook
 
 比如我们可以使用如下例子部署
 
@@ -138,22 +138,20 @@ services:
         volumes:
             - "/var/run/docker.sock:/var/run/docker.sock"
             - "jupyterhub-data:/data"
+            - "jupyterhub-notebook:/jupyterhub_data"
         environment:
             PROXY_SHOULD_START: "False"
             PROXY_API_URL: http://proxy:8001
             CONFIGPROXY_AUTH_TOKEN: abc123
-            HUB_DB_URL: "postgresql://postgres:postgres@pghost:5433/jupyterhub"
+            HUB_DB_URL: "postgresql://postgres:postgres@192.168.31.212:5433/jupyterhub"
             SPAWNER_NETWORK_NAME: jupyterhub_network
-            SPAWNER_NOTEBOOK_IMAGE: hsz1273327/small-dataset-notebook:notebook-6.5.4
-            SPAWNER_CONSTRAINTS: "node.role==manager"
+            SPAWNER_NOTEBOOK_IMAGE: hsz1273327/data-analyse-notebook:notebook-6.5.4
             SPAWNER_ENDPOINT_MODE: dnsrr
-
-            SPAWNER_CONSTRAINT_IMAGES: "base:calculation_type==cpu->jupyter/base-notebook:notebook-6.5.4;torch:calculation_type==gpu->hsz1273327/gpu-torch-notebook:pytorch2.0.1-cuda11.8.0-notebook6.5.4"
-            SPAWNER_CONSTRAINT_WITH_GPUS: "torch->1"
-            SPAWNER_PERSISTENCE_VOLUME_TYPE: "nfs3"
-            SPAWNER_PERSISTENCE_NFS_HOST: xxxxx.nas.aliyuncs.com # nas的host
-            SPAWNER_PERSISTENCE_NFS_DEVICE: ":/nas/jupyterhub/{username}"
-            SPAWNER_PERSISTENCE_NFS_OPTS: ",vers=3,nolock,hard"
+            SPAWNER_PERSISTENCE_VOLUME_TYPE: nfs3
+            SPAWNER_PERSISTENCE_NFS_HOST: <hostname>
+            SPAWNER_PERSISTENCE_NFS_DEVICE: ":<device_path>"
+            SPAWNER_CONSTRAINT_IMAGES: "jetson:node.labels.calculation_type==cpu->hsz1273327/gpu-torch-notebook:pytorch2.0.1-cuda11.8.0-notebook6.5.4;quant:node.labels.calculation_type==cpu->hsz1273327/quant-notebook:notebook-6.5.4"
+            SPAWNER_CONSTRAINT_WITH_GPUS: "jetson->1"
         deploy:
             endpoint_mode: dnsrr
             mode: replicated
@@ -176,7 +174,11 @@ services:
 
 volumes:
     jupyterhub-data:
-
+    jupyterhub-notebook:
+        driver_opts:
+          type: "nfs"
+          o: "addr=<hostname>,rw,vers=3,nolock,soft"
+          device: ":<device_path>"
 networks:
     jupyterhub_network:
         external: true

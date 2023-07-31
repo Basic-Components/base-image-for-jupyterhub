@@ -356,13 +356,13 @@ if SwarmSpawner_use_gpus:
         if SwarmSpawner_use_gpus_count != 0:
             default_extra_resources_spec = {
                 "generic_resources": {
-                    'gpu': SwarmSpawner_use_gpus_count
+                    'NVIDIA-GPU': SwarmSpawner_use_gpus_count
                 }
             }
         else:
             default_extra_resources_spec = {
                 "generic_resources": {
-                    'gpu': SwarmSpawner_use_gpus_device_id
+                    'NVIDIA-GPU': SwarmSpawner_use_gpus_device_id
                 }
             }
         c.SwarmSpawner.extra_resources_spec = default_extra_resources_spec

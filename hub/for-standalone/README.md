@@ -41,11 +41,13 @@
 + SPAWNER_PERSISTENCE_VOLUME_TYPE: 默认`local`,notebook服务保存的文件存放的位置类型,支持"local", "nfs3", "nfs4", "cifs"四种类型
 + SPAWNER_PERSISTENCE_VOLUME_SOURCE_NAME: 默认`jupyterhub-user-{username}`,挂载的volume名字,也就是source名
 + SPAWNER_PERSISTENCE_VOLUME_TARGET_SUBPATH: 默认`/persistence`,挂载的volume在容器中的路径,完整路径为`{SPAWNER_NOTEBOOK_DIR}{SPAWNER_PERSISTENCE_VOLUME_TARGET_SUBPATH}`
++ SPAWNER_PERSISTENCE_VOLUME_MKDIRPATH: 当SPAWNER_PERSISTENCE_VOLUME_TYPE不为`local`时生效, 默认`/jupyterhub_data`,本地挂载的nfs或cifs在容器中的路径,在部署用户镜像前会先在对应路径中创建用户同名文件夹
+
 + SPAWNER_PERSISTENCE_NFS_HOST: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器的地址,比如`10.0.0.10`
-+ SPAWNER_PERSISTENCE_NFS_DEVICE: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器上的路径,比如`:/var/docker-nfs`,可以在其中设置`{username}`,它将在构造镜像时替换为用户的名称
++ SPAWNER_PERSISTENCE_NFS_DEVICE: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则必填,指定nfs服务器上的路径,比如`:/var/docker-nfs`,真正存放的位置为`SPAWNER_PERSISTENCE_NFS_DEVICE/{username}`
 + SPAWNER_PERSISTENCE_NFS_OPTS: 选填,如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为"nfs3"或"nfs4则生效,nfs3时默认值为`,rw,vers=3,nolock,soft`;nfs4时默认值为`,rw,nfsvers=4,async`,指定nfs连接的配置项
 + SPAWNER_PERSISTENCE_CIFS_HOST: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为cifs则必填,指定cifs服务器的地址,比如`uxxxxx.your-server.de`
-+ SPAWNER_PERSISTENCE_CIFS_DEVICE: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为cifs则必填,指定cifs服务器上的路径,比如`//uxxxxx.your-server.de/backup`
++ SPAWNER_PERSISTENCE_CIFS_DEVICE: 如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为cifs则必填,指定cifs服务器上的路径,比如`//uxxxxx.your-server.de/backup`,真正存放的位置为`SPAWNER_PERSISTENCE_CIFS_DEVICE/{username}`
 + SPAWNER_PERSISTENCE_CIFS_OPTS:  选填,如果`SPAWNER_PERSISTENCE_VOLUME_TYPE`为cifs则生效,默认值为`,file_mode=0777,dir_mode=0777`
 + SPAWNER_CPU_LIMIT: 默认`2`,指定notebook容器最大可使用的cpu资源量
 + SPAWNER_CPU_GUARANTEE: 默认`1`,指定notebook容器最低使用的cpu资源量
@@ -74,7 +76,10 @@
 
 ## 例子
 
-比如我们可以使用如下例子部署
+由于是单机部署,建议在考虑扩展性的同时尽量减少外部依赖.在不考虑扩展的情况下可以纯单机部署,如果有扩展的可能则修改为使用外部数据库管理用户信息.
+虽然本项目支持,但并不推荐在单机场景下用nfs等外部存储保存用户的notebook文件.如果必须使用可以参考for-swarm中的配置方式.
+
+我们可以使用如下例子部署
 
 ```yml
 version: "2.4"
@@ -96,14 +101,9 @@ services:
             SPAWNER_NETWORK_NAME: jupyterhub_network
             SPAWNER_NOTEBOOK_IMAGE: hsz1273327/small-dataset-notebook:notebook-6.5.4
             SPAWNER_CONSTRAINT_IMAGES: "base->jupyter/base-notebook:notebook-6.5.4;spark->jupyter/all-spark-notebook:notebook-6.5.4"
-            SPAWNER_PERSISTENCE_VOLUME_TYPE: "nfs3"
-            SPAWNER_PERSISTENCE_NFS_HOST: xxxxx.nas.aliyuncs.com # nas的host
-            SPAWNER_PERSISTENCE_NFS_DEVICE: ":/nas/jupyterhub/{username}"
-            SPAWNER_PERSISTENCE_NFS_OPTS: ",vers=3,nolock,hard"
+            SPAWNER_PERSISTENCE_VOLUME_TYPE: "local"
 volumes:
     jupyterhub-data:
-
-
 
 networks:
     jupyterhub_network:
