@@ -356,13 +356,13 @@ if SwarmSpawner_use_gpus:
         if SwarmSpawner_use_gpus_count != 0:
             default_extra_resources_spec = {
                 "generic_resources": {
-                    'GPU': SwarmSpawner_use_gpus_count
+                    'NVIDIA-GPU': SwarmSpawner_use_gpus_count
                 }
             }
         else:
             default_extra_resources_spec = {
                 "generic_resources": {
-                    'GPU': SwarmSpawner_use_gpus_device_id
+                    'NVIDIA-GPU': SwarmSpawner_use_gpus_device_id
                 }
             }
         c.SwarmSpawner.extra_resources_spec = default_extra_resources_spec
@@ -432,13 +432,13 @@ if constraint_gpus:
                 if use_gpus_count != 0:
                     extra_resources_spec = {
                         "generic_resources": {
-                            'GPU': use_gpus_count
+                            'NVIDIA-GPU': use_gpus_count
                         }
                     }
                 else:
                     extra_resources_spec = {
                         "generic_resources": {
-                            'GPU': use_gpus_device_id
+                            'NVIDIA-GPU': use_gpus_device_id
                         }
                     }
                 constraint_gpu_map[suffix] = extra_resources_spec
