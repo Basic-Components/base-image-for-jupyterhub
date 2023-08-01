@@ -39,6 +39,7 @@ USER root
 RUN apt-get update --yes && \
     apt-get upgrade --yes && \
     apt-get install --yes --no-install-recommends \
+    python3-pip \
     bzip2 \
     ca-certificates \
     locales \
@@ -88,52 +89,52 @@ RUN echo "auth requisite pam_deny.so" >> /etc/pam.d/su && \
     fix-permissions "${HOME}"
 
 USER ${NB_UID}
-RUN python -m pip install --no-cache-dir jupyter
-RUN python -m pip install --no-cache-dir notebook==$NOTEBOOK_VERSION
-RUN python -m pip install --no-cache-dir jupyterhub==$JUPYTERHUB_VERSION
-RUN python -m pip install --no-cache-dir jupyterlab==$JUPYTERLAB_VERSION
-RUN python -m pip install --no-cache-dir nbclassic
+RUN pip install --no-cache-dir jupyter
+RUN pip install --no-cache-dir notebook==$NOTEBOOK_VERSION
+RUN pip install --no-cache-dir jupyterhub==$JUPYTERHUB_VERSION
+RUN pip install --no-cache-dir jupyterlab==$JUPYTERLAB_VERSION
+RUN pip install --no-cache-dir nbclassic
 
-RUN python -m pip --no-cache-dir install ipywidgets
-RUN python -m pip --no-cache-dir install widgetsnbextension
+RUN pip --no-cache-dir install ipywidgets
+RUN pip --no-cache-dir install widgetsnbextension
 
 
-RUN python -m pip --no-cache-dir install pyarrow 
-RUN python -m pip --no-cache-dir install fastavro
-RUN python -m pip --no-cache-dir install pydot 
-RUN python -m pip --no-cache-dir install lxml 
-RUN python -m pip --no-cache-dir install Pillow 
-RUN python -m pip --no-cache-dir install onnx
+RUN pip --no-cache-dir install pyarrow 
+RUN pip --no-cache-dir install fastavro
+RUN pip --no-cache-dir install pydot 
+RUN pip --no-cache-dir install lxml 
+RUN pip --no-cache-dir install Pillow 
+RUN pip --no-cache-dir install onnx
 # RUN pip --no-cache-dir install keras-core
 # RUN pip --no-cache-dir install keras-cv
 # RUN pip --no-cache-dir install keras-nlp
 # RUN pip --no-cache-dir install keras-tuner
-RUN python -m pip --no-cache-dir install tf2onnx
+RUN pip --no-cache-dir install tf2onnx
 
 
-RUN python -m pip --no-cache-dir install python-snappy
-RUN python -m pip --no-cache-dir install lz4
-RUN python -m pip --no-cache-dir install boto3
-RUN python -m pip --no-cache-dir install s3fs
-RUN python -m pip --no-cache-dir install psycopg2-binary
-RUN python -m pip --no-cache-dir install pymysql
-RUN python -m pip --no-cache-dir install peewee
-RUN python -m pip --no-cache-dir install SQLAlchemy
-RUN python -m pip --no-cache-dir install matplotlib
-RUN python -m pip --no-cache-dir install seaborn
-RUN python -m pip --no-cache-dir install pandas
-RUN python -m pip --no-cache-dir install thefuzz
-RUN python -m pip --no-cache-dir install pyod
-RUN python -m pip --no-cache-dir install scipy
-RUN python -m pip --no-cache-dir install scikit-learn
-RUN python -m pip --no-cache-dir install scikit-image
-RUN python -m pip --no-cache-dir install opencv-python
-RUN python -m pip --no-cache-dir install jieba
+RUN pip --no-cache-dir install python-snappy
+RUN pip --no-cache-dir install lz4
+RUN pip --no-cache-dir install boto3
+RUN pip --no-cache-dir install s3fs
+RUN pip --no-cache-dir install psycopg2-binary
+RUN pip --no-cache-dir install pymysql
+RUN pip --no-cache-dir install peewee
+RUN pip --no-cache-dir install SQLAlchemy
+RUN pip --no-cache-dir install matplotlib
+RUN pip --no-cache-dir install seaborn
+RUN pip --no-cache-dir install pandas
+RUN pip --no-cache-dir install thefuzz
+RUN pip --no-cache-dir install pyod
+RUN pip --no-cache-dir install scipy
+RUN pip --no-cache-dir install scikit-learn
+RUN pip --no-cache-dir install scikit-image
+RUN pip --no-cache-dir install opencv-python
+RUN pip --no-cache-dir install jieba
 
 
-RUN python -m pip install --no-cache-dir diffusers["torch"]
-RUN python -m pip install --no-cache-dir transformers
-RUN python -m pip --no-cache-dir install datasets
+RUN pip install --no-cache-dir diffusers["torch"]
+RUN pip install --no-cache-dir transformers
+RUN pip --no-cache-dir install datasets
 
 ENV PATH="${HOME}/.local/bin:${PATH}"
 

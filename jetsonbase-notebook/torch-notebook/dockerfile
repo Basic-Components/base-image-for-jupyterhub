@@ -39,6 +39,7 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 42D5A192B819C5DA
 RUN apt-get update --yes && \
     apt-get upgrade --yes && \
     apt-get install --yes --no-install-recommends \
+    python3-pip \
     bzip2 \
     ca-certificates \
     locales \
