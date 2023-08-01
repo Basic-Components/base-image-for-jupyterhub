@@ -6,7 +6,7 @@ on:
       jetpackR__version:
         description: "jetpack r version"
         required: false
-        default: "35.2.1"
+        default: "32.7.1"
       notebook_version:
         description: 'notebook version'
         required: false
@@ -18,15 +18,15 @@ on:
       jupyterlab_version:
         description: 'jupyterlab version'
         required: false
-        default: '4.0.2'
+        default: '4.0.3'
       pth_version:
         description: 'pytorch version'
         required: false
-        default: '2.0'
+        default: '1.10'
       tf_version:
         description: 'tensorflow version'
         required: false
-        default: '2.11'
+        default: '2.7'
 jobs:
   docker-build-torch-notebook:
     runs-on: ubuntu-latest
