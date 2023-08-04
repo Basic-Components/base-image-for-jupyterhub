@@ -89,11 +89,12 @@ RUN echo "auth requisite pam_deny.so" >> /etc/pam.d/su && \
     fix-permissions "${HOME}"
 
 USER ${NB_UID}
-RUN pip3 install --no-cache-dir jupyter
+# RUN pip3 install --no-cache-dir jupyter
+RUN pip3 install --no-cache-dir jupyterlab==$JUPYTERLAB_VERSION
 RUN pip3 install --no-cache-dir notebook==$NOTEBOOK_VERSION
 RUN pip3 install --no-cache-dir jupyterhub==$JUPYTERHUB_VERSION
-RUN pip3 install --no-cache-dir jupyterlab==$JUPYTERLAB_VERSION
-RUN pip3 install --no-cache-dir nbclassic
+
+# RUN pip3 install --no-cache-dir nbclassic
 
 RUN pip3 --no-cache-dir install ipywidgets
 RUN pip3 --no-cache-dir install widgetsnbextension
