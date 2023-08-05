@@ -47,9 +47,9 @@ USER root
 #     echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
 #     locale-gen
 RUN apt install gpg 
-RUN apt install curl
-RUN curl -sSL https://rvm.io/mpapis.asc | gpg --import -
-RUN curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -
+# RUN apt install curl
+# RUN curl -sSL https://rvm.io/mpapis.asc | gpg --import -
+# RUN curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 42D5A192B819C5DA
 RUN apt-get update --yes 
 RUN apt-get install --yes \
