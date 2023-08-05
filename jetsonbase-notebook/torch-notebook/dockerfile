@@ -36,25 +36,16 @@ USER root
 # RUN sed -i "s@http://.*archive.ubuntu.com@https://mirrors.tuna.tsinghua.edu.cn@g" /etc/apt/sources.list
 # RUN sed -i "s@http://.*security.ubuntu.com@https://mirrors.tuna.tsinghua.edu.cn@g" /etc/apt/sources.list
 # RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 42D5A192B819C5DA
-RUN apt-key adv --keyserver keys.gnupg.net --recv-keys 42D5A192B819C5DA
-RUN apt-get update --yes && \
-    apt-get upgrade --yes && \
-    apt-get install --yes --no-install-recommends \
-    python3-pip \
-    bzip2 \
-    ca-certificates \
-    locales \
-    sudo \
-    wget \
-    build-essential \
+# RUN apt-key adv --keyserver keys.gnupg.net --recv-keys 42D5A192B819C5DA
+# RUN apt-get update --yes && \
+    # apt-get upgrade --yes && \
+RUN apt install --yes --no-install-recommends \
     fonts-liberation \
     ffmpeg \
     git \
     pandoc \
-    libffi-dev \
     libssl-dev \
     cargo \
-    pkg-config \
     run-one && \
     apt-get clean && rm -rf /var/lib/apt/lists/* && \
     echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
@@ -93,17 +84,15 @@ RUN echo "auth requisite pam_deny.so" >> /etc/pam.d/su && \
     chmod g+w /etc/passwd && \
     fix-permissions "${HOME}"
 
-USER ${NB_UID}
-# RUN pip3 install --no-cache-dir jupyter
-RUN pip3 install --no-cache-dir setuptools
-RUN pip3 install --no-cache-dir setuptools_rust
-RUN pip3 install --no-cache-dir wheel
-RUN pip3 install --no-cache-dir packaging
-RUN pip3 install --no-cache-dir cffi
-RUN pip3 install --no-cache-dir jupyterlab==$JUPYTERLAB_VERSION
-RUN pip3 install --no-cache-dir notebook==$NOTEBOOK_VERSION
-RUN pip3 install --no-cache-dir jupyterhub==$JUPYTERHUB_VERSION
+RUN rm -rf ~/.cargo/registry/cache
 
+USER ${NB_UID}
+# RUN export CARGO_NET_GIT_FETCH_WITH_CLI=true
+# RUN pip3 install --no-cache-dir jupyter
+
+RUN pip3 install --no-cache-dir setuptools_rust
+RUN pip3 install --no-cache-dir jupyterlab==$JUPYTERLAB_VERSION
+RUN pip3 install --no-cache-dir jupyterhub==$JUPYTERHUB_VERSION
 # RUN pip3 install --no-cache-dir nbclassic
 
 RUN pip3 --no-cache-dir install ipywidgets
