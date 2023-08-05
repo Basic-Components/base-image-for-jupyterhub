@@ -39,7 +39,7 @@ USER root
 # RUN apt-key adv --keyserver keys.gnupg.net --recv-keys 42D5A192B819C5DA
 # RUN apt-get update --yes && \
     # apt-get upgrade --yes && \
-RUN apt install --yes --no-install-recommends \
+RUN apt install --yes \
     fonts-liberation \
     ffmpeg \
     git \
