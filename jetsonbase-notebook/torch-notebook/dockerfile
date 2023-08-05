@@ -52,7 +52,7 @@ RUN gpg --refresh-keys
 # RUN apt install curl
 # RUN curl -sSL https://rvm.io/mpapis.asc | gpg --import -
 # RUN curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -
-RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 42D5A192B819C5DA
+# RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 42D5A192B819C5DA
 RUN apt-get update --yes 
 RUN apt-get install --yes \
     fonts-liberation \
