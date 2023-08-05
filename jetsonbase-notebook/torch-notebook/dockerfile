@@ -90,6 +90,10 @@ RUN echo "auth requisite pam_deny.so" >> /etc/pam.d/su && \
 
 USER ${NB_UID}
 # RUN pip3 install --no-cache-dir jupyter
+RUN pip3 install --no-cache-dir setuptools
+RUN pip3 install --no-cache-dir setuptools_rust
+RUN pip3 install --no-cache-dir wheel
+RUN pip3 install --no-cache-dir packaging
 RUN pip3 install --no-cache-dir jupyterlab==$JUPYTERLAB_VERSION
 RUN pip3 install --no-cache-dir notebook==$NOTEBOOK_VERSION
 RUN pip3 install --no-cache-dir jupyterhub==$JUPYTERHUB_VERSION
