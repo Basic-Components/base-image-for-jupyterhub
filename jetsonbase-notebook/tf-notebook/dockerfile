@@ -24,6 +24,7 @@ RUN apt-get install --yes \
     pandoc \
     libssl-dev \
     sudo \
+    rustc \
     cargo \
     run-one
 
@@ -133,9 +134,11 @@ RUN echo "auth requisite pam_deny.so" >> /etc/pam.d/su && \
     useradd -l -m -s /bin/bash -N -u "${NB_UID}" "${NB_USER}" && \
     chmod g+w /etc/passwd && \
     fix-permissions "${HOME}"
+
 RUN rm -rf ~/.cargo/registry/cache
 
 USER ${NB_UID}
+RUN pip3 install -U pip
 # RUN pip3 install --no-cache-dir jupyter
 # RUN pip3 install --no-cache-dir setuptools
 RUN pip3 install --no-cache-dir setuptools_rust
