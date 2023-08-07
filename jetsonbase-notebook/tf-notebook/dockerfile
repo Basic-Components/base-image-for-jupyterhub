@@ -13,6 +13,7 @@ ENV NOTEBOOK_VERSION=${NOTEBOOK_VERSION}
 ENV JUPYTERHUB_VERSION=${JUPYTERHUB_VERSION}
 ENV JUPYTERLAB_VERSION=${JUPYTERLAB_VERSION}
 
+RUN apt install --yes gpg
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 42D5A192B819C5DA
 # RUN gpg --keyserver keyserver.ubuntu.com --recv-key 42D5A192B819C5DA
 RUN apt-get update --yes 
@@ -77,22 +78,22 @@ USER root
 # RUN apt install curl
 # RUN curl -sSL https://rvm.io/mpapis.asc | gpg --import -
 # RUN curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -
-RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 42D5A192B819C5DA
-# RUN gpg --keyserver keyserver.ubuntu.com --recv-key 42D5A192B819C5DA
-RUN apt-get update --yes 
-RUN apt-get install --yes \
-    fonts-liberation \
-    ffmpeg \
-    git \
-    pandoc \
-    libssl-dev \
-    cargo \
-    run-one
+# RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 42D5A192B819C5DA
+# # RUN gpg --keyserver keyserver.ubuntu.com --recv-key 42D5A192B819C5DA
+# RUN apt-get update --yes 
+# RUN apt-get install --yes \
+#     fonts-liberation \
+#     ffmpeg \
+#     git \
+#     pandoc \
+#     libssl-dev \
+#     cargo \
+#     run-one
 
-RUN apt-get clean 
-RUN rm -rf /var/lib/apt/lists/* 
-RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
-RUN locale-gen
+# RUN apt-get clean 
+# RUN rm -rf /var/lib/apt/lists/* 
+# RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
+# RUN locale-gen
 
 ENV HOME="/home/${NB_USER}"
 
