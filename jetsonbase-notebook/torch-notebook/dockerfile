@@ -13,6 +13,23 @@ ENV NOTEBOOK_VERSION=${NOTEBOOK_VERSION}
 ENV JUPYTERHUB_VERSION=${JUPYTERHUB_VERSION}
 ENV JUPYTERLAB_VERSION=${JUPYTERLAB_VERSION}
 
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 42D5A192B819C5DA
+# RUN gpg --keyserver keyserver.ubuntu.com --recv-key 42D5A192B819C5DA
+RUN apt-get update --yes 
+RUN apt-get install --yes \
+    fonts-liberation \
+    ffmpeg \
+    git \
+    pandoc \
+    libssl-dev \
+    cargo \
+    run-one
+
+RUN apt-get clean
+RUN rm -rf /var/lib/apt/lists/* 
+RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
+RUN locale-gen
+
 # Configure environment
 ENV SHELL=/bin/bash \
     NB_USER="${NB_USER}" \
@@ -46,28 +63,28 @@ USER root
 #     apt-get clean && rm -rf /var/lib/apt/lists/* && \
 #     echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
 #     locale-gen
-RUN apt install gpg 
-RUN gpg --refresh-keys
+# RUN apt install gpg 
+# RUN gpg --refresh-keys
 # RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
 # RUN apt install curl
 # RUN curl -sSL https://rvm.io/mpapis.asc | gpg --import -
 # RUN curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -
 # RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 42D5A192B819C5DA
-RUN gpg --keyserver keyserver.ubuntu.com --recv-key 42D5A192B819C5DA
-RUN apt-get update --yes 
-RUN apt-get install --yes \
-    fonts-liberation \
-    ffmpeg \
-    git \
-    pandoc \
-    libssl-dev \
-    cargo \
-    run-one
+# # RUN gpg --keyserver keyserver.ubuntu.com --recv-key 42D5A192B819C5DA
+# RUN apt-get update --yes 
+# RUN apt-get install --yes \
+#     fonts-liberation \
+#     ffmpeg \
+#     git \
+#     pandoc \
+#     libssl-dev \
+#     cargo \
+#     run-one
 
-RUN apt-get clean
-RUN rm -rf /var/lib/apt/lists/* 
-RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
-RUN locale-gen
+# RUN apt-get clean
+# RUN rm -rf /var/lib/apt/lists/* 
+# RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
+# RUN locale-gen
 
 ENV HOME="/home/${NB_USER}"
 
