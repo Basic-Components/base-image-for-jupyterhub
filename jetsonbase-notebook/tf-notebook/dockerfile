@@ -24,6 +24,7 @@ RUN apt-get install --yes \
     pandoc \
     libssl-dev \
     sudo \
+    cmake \
     rustc \
     cargo \
     run-one
@@ -186,8 +187,6 @@ RUN pip3 --no-cache-dir install scikit-image
 RUN pip3 --no-cache-dir install opencv-python
 RUN pip3 --no-cache-dir install jieba
 
-
-RUN pip3 install --no-cache-dir diffusers["torch"]
 RUN pip3 install --no-cache-dir transformers
 RUN pip3 --no-cache-dir install datasets
 

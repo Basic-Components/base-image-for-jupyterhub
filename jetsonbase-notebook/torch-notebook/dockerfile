@@ -13,7 +13,8 @@ ENV NOTEBOOK_VERSION=${NOTEBOOK_VERSION}
 ENV JUPYTERHUB_VERSION=${JUPYTERHUB_VERSION}
 ENV JUPYTERLAB_VERSION=${JUPYTERLAB_VERSION}
 
-RUN apt install --yes gnupg
+# RUN apt install --yes gnupg
+RUN apt install --yes gnupg2
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 42D5A192B819C5DA
 # RUN gpg --keyserver keyserver.ubuntu.com --recv-key 42D5A192B819C5DA
 RUN apt-get update --yes 
@@ -24,6 +25,7 @@ RUN apt-get install --yes \
     pandoc \
     libssl-dev \
     sudo \
+    cmake \
     rustc \
     cargo \
     run-one
@@ -172,8 +174,6 @@ RUN pip3 --no-cache-dir install scikit-image
 RUN pip3 --no-cache-dir install opencv-python
 RUN pip3 --no-cache-dir install jieba
 
-
-RUN pip3 install --no-cache-dir diffusers["torch"]
 RUN pip3 install --no-cache-dir transformers
 RUN pip3 --no-cache-dir install datasets
 
