@@ -165,7 +165,7 @@ RUN pip3 --no-cache-dir install matplotlib
 RUN pip3 --no-cache-dir install seaborn
 RUN pip3 --no-cache-dir install pandas
 RUN pip3 --no-cache-dir install thefuzz
-RUN pip3 --no-cache-dir install pyod
+# RUN pip3 --no-cache-dir install pyod
 RUN pip3 --no-cache-dir install scipy
 RUN pip3 --no-cache-dir install scikit-learn
 RUN pip3 --no-cache-dir install scikit-image
