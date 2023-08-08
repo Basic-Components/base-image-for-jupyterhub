@@ -73,6 +73,7 @@ COPY jupyter_server_config.py docker_healthcheck.py /etc/jupyter/
 USER root
 RUN chmod +x /usr/local/bin/start-notebook.sh
 RUN chmod +x /usr/local/bin/start-singleuser.sh
+RUN chmod +x /etc/jupyter/docker_healthcheck.py
 
 # Legacy for Jupyter Notebook Server, see: [#1205](https://github.com/jupyter/docker-stacks/issues/1205)
 RUN sed -re "s/c.ServerApp/c.NotebookApp/g" \

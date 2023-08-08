@@ -13,8 +13,8 @@ ENV NOTEBOOK_VERSION=${NOTEBOOK_VERSION}
 ENV JUPYTERHUB_VERSION=${JUPYTERHUB_VERSION}
 ENV JUPYTERLAB_VERSION=${JUPYTERLAB_VERSION}
 
-# RUN apt install --yes gnupg
-RUN apt install --yes gnupg2
+RUN apt install --yes gnupg
+# RUN apt install --yes gnupg2
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 42D5A192B819C5DA
 # RUN gpg --keyserver keyserver.ubuntu.com --recv-key 42D5A192B819C5DA
 RUN apt-get update --yes 
