@@ -14,6 +14,8 @@ ENV JUPYTERHUB_VERSION=${JUPYTERHUB_VERSION}
 ENV JUPYTERLAB_VERSION=${JUPYTERLAB_VERSION}
 
 RUN apt install --yes gnupg
+RUN mkdir ~/.gnupg
+RUN echo "disable-ipv6" >> ~/.gnupg/dirmngr.conf
 # RUN apt install --yes gnupg2
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 42D5A192B819C5DA
 # RUN gpg --keyserver keyserver.ubuntu.com --recv-key 42D5A192B819C5DA
