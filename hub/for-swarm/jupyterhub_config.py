@@ -55,12 +55,10 @@
 + SPAWNER_CONSECUTIVE_FAILURE_LIMIT: 默认0,Spawner关闭与hub连接前允许的最大故障数,0表示不限制
 + SPAWNER_POLL_INTERVAL: 默认30, 轮询Spawner的间隔,单位s
 + SPAWNER_START_TIMEOUT: 默认120,单用户容器启动最大等待时间,单位s
-+ SPAWNER_USE_GPUS: 选填,默认不使用spawner对应的容器是否默认需要使用gpu,使用几个gpu,可以为正整数或为-1或者all,也可以使用`device_id=xxx`指定使用的gpu设备号
 + SPAWNER_CONSTRAINTS: 选填,spawner对应的容器的部署位置限制,以`,`隔开限制
 + SPAWNER_PREFERENCE: 选填,spawner对应的容器的部署优先策略,以`,`隔开策略,每条策略形式为`策略:标签`
 + SPAWNER_PLATFORM: 选填,spawner对应的容器部署的平台限制,以`,`隔开限制,每条限制形式为`arch:os`
-+ SPAWNER_CONSTRAINT_IMAGES: 选填,有值则生效,根据用户名的后缀确定部署镜像和限制,形式如`后缀1[:限制1,限制2,...]->镜像名1;后缀2[:限制3,限制4...]->镜像名2...`当登录用户用户名有后缀`-后缀1`时会使用镜像1而非默认镜像构造容器,部署时如果有设置限制则也会增加限制
-+ SPAWNER_CONSTRAINT_WITH_GPUS: 选填,当SPAWNER_CONSTRAINT_IMAGES生效时可以生效,指定后缀是否使用gpu,gpu设置语法与SPAWNER_USE_GPUS一致,形式如`后缀1->gpu设置1;....`
++ SPAWNER_CONSTRAINT_IMAGES: 选填,有值则生效,根据用户名的后缀确定部署镜像和限制,形式如`后缀1[:限制1,限制2,...]->镜像名1;后缀2[:限制3,限制4...]->镜像名2...`当登录用户用户名有后缀`-后缀1`时会使用镜像1而非默认镜像构造容器,部署时如果有设置限制则会替换原有限制,注意swarm中节点是否可以使用gpu需要预先设置
 
 > AUTH设置
 
@@ -75,9 +73,10 @@
 import os
 import copy
 import logging
-from typing import TypedDict, List
+from typing import List, Dict, TypedDict, Tuple, Union
 from pathlib import Path
 from docker.types import Mount, DriverConfig
+from jupyterhub.spawner import Spawner
 
 # 创建 logger 对象
 logger = logging.getLogger('pre_spawn_hook_logger')
@@ -336,36 +335,36 @@ c.SwarmSpawner.consecutive_failure_limit = int(os.environ.get("SPAWNER_CONSECUTI
 c.SwarmSpawner.poll_interval = int(os.environ.get("SPAWNER_POLL_INTERVAL", "30"))
 # dockerservice启动最大等待时间
 c.SwarmSpawner.start_timeout = int(os.environ.get("SPAWNER_START_TIMEOUT", "120"))
-# dockerservice启动的时候是否要使用gpu,使用几个gpu,如果不填则表示不使用gpu
-SwarmSpawner_use_gpus = os.environ.get("SPAWNER_USE_GPUS", "").lower()
-default_extra_resources_spec = {}
-if SwarmSpawner_use_gpus:
-    SwarmSpawner_use_gpus_count = 0
-    SwarmSpawner_use_gpus_device_id = ""
-    _use_gpus = False
-    if SwarmSpawner_use_gpus == "all":
-        SwarmSpawner_use_gpus_count = -1
-        _use_gpus = True
-    elif SwarmSpawner_use_gpus.isdigit():
-        SwarmSpawner_use_gpus_count = int(SwarmSpawner_use_gpus)
-        _use_gpus = True
-    elif SwarmSpawner_use_gpus.startswith("device_id="):
-        SwarmSpawner_use_gpus_device_id = SwarmSpawner_use_gpus.replace("device_id=", "").strip()
-        _use_gpus = True
-    if _use_gpus:
-        if SwarmSpawner_use_gpus_count != 0:
-            default_extra_resources_spec = {
-                "generic_resources": {
-                    'NVIDIA-GPU': SwarmSpawner_use_gpus_count
-                }
-            }
-        else:
-            default_extra_resources_spec = {
-                "generic_resources": {
-                    'NVIDIA-GPU': SwarmSpawner_use_gpus_device_id
-                }
-            }
-        c.SwarmSpawner.extra_resources_spec = default_extra_resources_spec
+# # dockerservice启动的时候是否要使用gpu,使用几个gpu,如果不填则表示不使用gpu
+# SwarmSpawner_use_gpus = os.environ.get("SPAWNER_USE_GPUS", "").lower()
+# default_extra_resources_spec = {}
+# if SwarmSpawner_use_gpus:
+#     SwarmSpawner_use_gpus_count = 0
+#     SwarmSpawner_use_gpus_device_id = ""
+#     _use_gpus = False
+#     if SwarmSpawner_use_gpus == "all":
+#         SwarmSpawner_use_gpus_count = -1
+#         _use_gpus = True
+#     elif SwarmSpawner_use_gpus.isdigit():
+#         SwarmSpawner_use_gpus_count = int(SwarmSpawner_use_gpus)
+#         _use_gpus = True
+#     elif SwarmSpawner_use_gpus.startswith("device_id="):
+#         SwarmSpawner_use_gpus_device_id = SwarmSpawner_use_gpus.replace("device_id=", "").strip()
+#         _use_gpus = True
+#     if _use_gpus:
+#         if SwarmSpawner_use_gpus_count != 0:
+#             default_extra_resources_spec = {
+#                 "generic_resources": {
+#                     'NVIDIA-GPU': SwarmSpawner_use_gpus_count
+#                 }
+#             }
+#         else:
+#             default_extra_resources_spec = {
+#                 "generic_resources": {
+#                     'NVIDIA-GPU': SwarmSpawner_use_gpus_device_id
+#                 }
+#             }
+#         c.SwarmSpawner.extra_resources_spec = default_extra_resources_spec
 # 指定docker service的部署位置策略
 SwarmSpawner_constraints = os.environ.get('SPAWNER_CONSTRAINTS')
 SwarmSpawner_preferences = os.environ.get('SPAWNER_PREFERENCE')
@@ -382,7 +381,14 @@ if any([SwarmSpawner_constraints, SwarmSpawner_preferences, SwarmSpawner_platfor
 
 # 条件镜像
 constraint_images = os.environ.get('SPAWNER_CONSTRAINT_IMAGES')
-constraint_image_map = {}
+
+
+class ConstraintImageMapItem(TypedDict, total=False):
+    image: str
+    constraint_list: List[Union[str, Tuple[str, str]]]
+
+
+constraint_image_map: Dict[str, ConstraintImageMapItem] = {}
 
 if constraint_images:
     constraint_image_list = constraint_images.split(";")
@@ -396,7 +402,7 @@ if constraint_images:
                 constraint_image_map[suffix] = {"image": image}
             elif len(constraint_info_list) == 2:
                 suffix, constraints = constraint_info_list
-                constraint_list = [i.strip() for i in constraints.split(",")]
+                constraint_list: List[Union[str, Tuple[str, str]]] = [i.strip() for i in constraints.split(",")]
                 constraint_image_map[suffix] = {"image": image, "constraint_list": constraint_list}
             else:
                 raise AttributeError("SPAWNER_CONSTRAINT_IMAGES syntax error")
@@ -404,52 +410,52 @@ if constraint_images:
             raise AttributeError("SPAWNER_CONSTRAINT_IMAGES syntax error")
 
 
-# 条件启动gpu设置
-constraint_gpus = os.environ.get('SPAWNER_CONSTRAINT_WITH_GPUS')
-constraint_gpu_map = {}
+# # 条件启动gpu设置
+# constraint_gpus = os.environ.get('SPAWNER_CONSTRAINT_WITH_GPUS')
+# constraint_gpu_map = {}
 
-if constraint_gpus:
-    constraint_gpu_list = constraint_gpus.split(";")
-    for constraint_gpu in constraint_gpu_list:
-        constraint_gpu_info = constraint_gpu.split("->")
-        if len(constraint_gpu_info) == 2:
-            suffix, gpu_setting = constraint_gpu_info
-            use_gpus_count = 0
-            use_gpus_device_id = ""
-            _use_gpus = False
-            if gpu_setting.lower() == "all":
-                use_gpus_count = -1
-                _use_gpus = True
-            elif gpu_setting.isdigit():
-                use_gpus_count = int(gpu_setting)
-                _use_gpus = True
-            elif gpu_setting.lower().startswith("device_id="):
-                use_gpus_device_id = gpu_setting.replace("device_id=", "").strip()
-                _use_gpus = True
-            else:
-                raise AttributeError("SPAWNER_CONSTRAINT_WITH_GPUS gpu setting syntax error")
-            if _use_gpus:
-                if use_gpus_count != 0:
-                    extra_resources_spec = {
-                        "generic_resources": {
-                            'NVIDIA-GPU': use_gpus_count
-                        }
-                    }
-                else:
-                    extra_resources_spec = {
-                        "generic_resources": {
-                            'NVIDIA-GPU': use_gpus_device_id
-                        }
-                    }
-                constraint_gpu_map[suffix] = extra_resources_spec
+# if constraint_gpus:
+#     constraint_gpu_list = constraint_gpus.split(";")
+#     for constraint_gpu in constraint_gpu_list:
+#         constraint_gpu_info = constraint_gpu.split("->")
+#         if len(constraint_gpu_info) == 2:
+#             suffix, gpu_setting = constraint_gpu_info
+#             use_gpus_count = 0
+#             use_gpus_device_id = ""
+#             _use_gpus = False
+#             if gpu_setting.lower() == "all":
+#                 use_gpus_count = -1
+#                 _use_gpus = True
+#             elif gpu_setting.isdigit():
+#                 use_gpus_count = int(gpu_setting)
+#                 _use_gpus = True
+#             elif gpu_setting.lower().startswith("device_id="):
+#                 use_gpus_device_id = gpu_setting.replace("device_id=", "").strip()
+#                 _use_gpus = True
+#             else:
+#                 raise AttributeError("SPAWNER_CONSTRAINT_WITH_GPUS gpu setting syntax error")
+#             if _use_gpus:
+#                 if use_gpus_count != 0:
+#                     extra_resources_spec = {
+#                         "generic_resources": {
+#                             'NVIDIA-GPU': use_gpus_count
+#                         }
+#                     }
+#                 else:
+#                     extra_resources_spec = {
+#                         "generic_resources": {
+#                             'NVIDIA-GPU': use_gpus_device_id
+#                         }
+#                     }
+#                 constraint_gpu_map[suffix] = extra_resources_spec
 
-            else:
-                raise AttributeError("SPAWNER_CONSTRAINT_WITH_GPUS need setting")
-        else:
-            raise AttributeError("SPAWNER_CONSTRAINT_WITH_GPUS syntax error")
+#             else:
+#                 raise AttributeError("SPAWNER_CONSTRAINT_WITH_GPUS need setting")
+#         else:
+#             raise AttributeError("SPAWNER_CONSTRAINT_WITH_GPUS syntax error")
 
 
-def spawner_start_hook(spawner):
+def spawner_start_hook(spawner: Spawner) -> None:
     username = spawner.user.name
     logger.info(f'spawner_start_hook for {username} start')
     user_name_suffix = username.split("-")[-1]
@@ -503,13 +509,13 @@ def spawner_start_hook(spawner):
 
     # constraint_gpu
     # if default_extra_resources_spec:
-    spawner.extra_resources_spec = default_extra_resources_spec
+    # spawner.extra_resources_spec = default_extra_resources_spec
 
-    if constraint_gpu_map:
-        constraint_gpu_info = constraint_gpu_map.get(user_name_suffix)
-        if constraint_gpu_info:
-            spawner.extra_resources_spec = constraint_gpu_info
-    logger.info(f'spawner_start_hook user {username} set_gpu ok, with resources_spec  { spawner.extra_resources_spec }')
+    # if constraint_gpu_map:
+    #     constraint_gpu_info = constraint_gpu_map.get(user_name_suffix)
+    #     if constraint_gpu_info:
+    #         spawner.extra_resources_spec = constraint_gpu_info
+    # logger.info(f'spawner_start_hook user {username} set_gpu ok, with resources_spec  { spawner.extra_resources_spec }')
     logger.info('spawner_start_hook ok')
 
 

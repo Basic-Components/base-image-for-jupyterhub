@@ -16,9 +16,7 @@ ENV JUPYTERLAB_VERSION=${JUPYTERLAB_VERSION}
 RUN apt install --yes gnupg
 RUN mkdir ~/.gnupg
 RUN echo "disable-ipv6" >> ~/.gnupg/dirmngr.conf
-# RUN apt install --yes gnupg2
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 42D5A192B819C5DA
-# RUN gpg --keyserver keyserver.ubuntu.com --recv-key 42D5A192B819C5DA
 RUN apt-get update --yes 
 RUN apt-get install --yes \
     fonts-liberation \
@@ -28,8 +26,6 @@ RUN apt-get install --yes \
     libssl-dev \
     sudo \
     cmake \
-    # libprotobuf-dev \
-    # protobuf-compiler \
     rustc \
     cargo \
     run-one
@@ -51,49 +47,6 @@ ENV SHELL=/bin/bash \
 
 
 USER root
-
-# Install all OS dependencies for notebook server that starts but lacks all
-# features (e.g., download as all possible file formats)
-
-# RUN sed -i "s@http://.*archive.ubuntu.com@https://mirrors.tuna.tsinghua.edu.cn@g" /etc/apt/sources.list
-# RUN sed -i "s@http://.*security.ubuntu.com@https://mirrors.tuna.tsinghua.edu.cn@g" /etc/apt/sources.list
-# RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 42D5A192B819C5DA
-# RUN apt-key adv --keyserver keys.gnupg.net --recv-keys 42D5A192B819C5DA
-# RUN apt-get update --yes && \
-    # apt-get upgrade --yes && \
-# RUN apt install --yes \
-#     fonts-liberation \
-#     ffmpeg \
-#     git \
-#     pandoc \
-#     libssl-dev \
-#     cargo \
-#     run-one && \
-#     apt-get clean && rm -rf /var/lib/apt/lists/* && \
-#     echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
-#     locale-gen
-# RUN apt install gpg 
-# RUN gpg --refresh-keys
-# RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
-# RUN apt install curl
-# RUN curl -sSL https://rvm.io/mpapis.asc | gpg --import -
-# RUN curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -
-# RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 42D5A192B819C5DA
-# # RUN gpg --keyserver keyserver.ubuntu.com --recv-key 42D5A192B819C5DA
-# RUN apt-get update --yes 
-# RUN apt-get install --yes \
-#     fonts-liberation \
-#     ffmpeg \
-#     git \
-#     pandoc \
-#     libssl-dev \
-#     cargo \
-#     run-one
-
-# RUN apt-get clean
-# RUN rm -rf /var/lib/apt/lists/* 
-# RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
-# RUN locale-gen
 
 ENV HOME="/home/${NB_USER}"
 
@@ -137,14 +90,11 @@ RUN echo "auth requisite pam_deny.so" >> /etc/pam.d/su && \
 RUN rm -rf ~/.cargo/registry/cache
 
 USER ${NB_UID}
-# RUN export CARGO_NET_GIT_FETCH_WITH_CLI=true
-# RUN pip3 install --no-cache-dir jupyter
 
 RUN pip3 install -U pip
 RUN pip3 install --no-cache-dir setuptools_rust
 RUN pip3 install --no-cache-dir jupyterlab==$JUPYTERLAB_VERSION
 RUN pip3 install --no-cache-dir jupyterhub==$JUPYTERHUB_VERSION
-# RUN pip3 install --no-cache-dir nbclassic
 
 RUN pip3 --no-cache-dir install ipywidgets
 RUN pip3 --no-cache-dir install widgetsnbextension
@@ -155,10 +105,6 @@ RUN pip3 --no-cache-dir install fastavro
 RUN pip3 --no-cache-dir install pydot 
 RUN pip3 --no-cache-dir install lxml 
 RUN pip3 --no-cache-dir install Pillow 
-# RUN pip3 --no-cache-dir install onnx
-
-
-
 RUN pip3 --no-cache-dir install python-snappy
 RUN pip3 --no-cache-dir install lz4
 RUN pip3 --no-cache-dir install boto3
@@ -171,11 +117,9 @@ RUN pip3 --no-cache-dir install matplotlib
 RUN pip3 --no-cache-dir install seaborn
 RUN pip3 --no-cache-dir install pandas
 RUN pip3 --no-cache-dir install thefuzz
-# RUN pip3 --no-cache-dir install pyod
 RUN pip3 --no-cache-dir install scipy
 RUN pip3 --no-cache-dir install scikit-learn
 RUN pip3 --no-cache-dir install scikit-image
-# RUN pip3 --no-cache-dir install opencv-python
 RUN pip3 --no-cache-dir install jieba
 
 RUN pip3 install --no-cache-dir transformers
@@ -192,6 +136,9 @@ COPY jupyter_server_config.py docker_healthcheck.py /etc/jupyter/
 # Configure container startup
 
 USER root
+
+RUN chmod +x /etc/jupyter/docker_healthcheck.py
+
 RUN sed -re "s/c.ServerApp/c.NotebookApp/g" \
     /etc/jupyter/jupyter_server_config.py > /etc/jupyter/jupyter_notebook_config.py && \
     fix-permissions /etc/jupyter/

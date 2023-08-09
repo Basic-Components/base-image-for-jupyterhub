@@ -1,6 +1,6 @@
 # 小规模数据处理使用的镜像
 
-数据来源限定为pg和s3协议的对象存储.本镜像提供如下包:
+数据来源限定为pg,mysql和s3协议的对象存储.本镜像提供如下包:
 
 >基础工具
 
@@ -9,8 +9,8 @@
 
 > 数据获取
 
-+ peewee(mpysql,pg)
-+ SQLAlchemy(mpysql,pg)
++ peewee(pymsql,pg)
++ SQLAlchemy(pymsql,pg)
 + boto3
 + s3fs
 

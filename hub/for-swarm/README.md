@@ -68,12 +68,10 @@
 + SPAWNER_CONSECUTIVE_FAILURE_LIMIT: 默认0,Spawner关闭与hub连接前允许的最大故障数,0表示不限制
 + SPAWNER_POLL_INTERVAL: 默认30, 轮询Spawner的间隔,单位s
 + SPAWNER_START_TIMEOUT: 默认120,单用户容器启动最大等待时间,单位s
-+ SPAWNER_USE_GPUS: 选填,默认不使用spawner对应的容器是否默认需要使用gpu,使用几个gpu,可以为正整数或为-1或者all,也可以使用`device_id=xxx`指定使用的gpu设备号
 + SPAWNER_CONSTRAINTS: 选填,spawner对应的容器的部署位置限制,以`,`隔开限制
 + SPAWNER_PREFERENCE: 选填,spawner对应的容器的部署优先策略,以`,`隔开策略,每条策略形式为`策略:标签`
 + SPAWNER_PLATFORM: 选填,spawner对应的容器部署的平台限制,以`,`隔开限制,每条限制形式为`arch:os`
-+ SPAWNER_CONSTRAINT_IMAGES: 选填,有值则生效,根据用户名的后缀确定部署镜像和限制,形式如`后缀1[:限制1,限制2,...]->镜像名1;后缀2[:限制3,限制4...]->镜像名2...`当登录用户用户名有后缀`-后缀1`时会使用镜像1而非默认镜像构造容器,部署时如果有设置限制则也会增加限制
-+ SPAWNER_CONSTRAINT_WITH_GPUS: 选填,当SPAWNER_CONSTRAINT_IMAGES生效时可以生效,指定后缀是否使用gpu,gpu设置语法与SPAWNER_USE_GPUS一致,形式如`后缀1->gpu设置1;....`
++ SPAWNER_CONSTRAINT_IMAGES: 选填,有值则生效,根据用户名的后缀确定部署镜像和限制,形式如`后缀1[:限制1,限制2,...]->镜像名1;后缀2[:限制3,限制4...]->镜像名2...`当登录用户用户名有后缀`-后缀1`时会使用镜像1而非默认镜像构造容器,部署时如果有设置限制则会替换原有限制,注意swarm中节点是否可以使用gpu需要预先设置
 
 > AUTH设置
 
@@ -84,7 +82,6 @@
 + AUTH_SECONDS_BEFORE_NEXT_TRY: 默认`1200`,重试最长间隔时间
 + AUTH_ENABLE_SIGNUP: 默认`True`,是否开放新用户注册
 + AUTH_OPEN_SIGNUP: 默认`False`,是否允许用户注册后未经管理员确认就可以进入使用
-
 
 ## 例子
 
@@ -151,7 +148,6 @@ services:
             SPAWNER_PERSISTENCE_NFS_HOST: <hostname>
             SPAWNER_PERSISTENCE_NFS_DEVICE: ":<device_path>"
             SPAWNER_CONSTRAINT_IMAGES: "jetson:node.labels.calculation_type==cpu->hsz1273327/gpu-torch-notebook:pytorch2.0.1-cuda11.8.0-notebook6.5.4;quant:node.labels.calculation_type==cpu->hsz1273327/quant-notebook:notebook-6.5.4"
-            SPAWNER_CONSTRAINT_WITH_GPUS: "jetson->1"
         deploy:
             endpoint_mode: dnsrr
             mode: replicated

@@ -7,3 +7,5 @@ jupyterhub使用的基础镜像.
 + cpubase-notebook文件夹下为cpu计算的各种环境下使用的notebook
 
 + gpubase-notebook文件夹下为gpu计算的各种环境下使用的notebook
+
++ jetson32base-notebook文件夹下为jetson R32版本下使用的notebook

@@ -74,7 +74,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           builder: ${{ steps.buildx.outputs.name }}
-          context: "{{defaultContext}}:jetsonbase-notebook/torch-notebook"
+          context: "{{defaultContext}}:jetson32base-notebook/torch-notebook"
           file: dockerfile
           platforms: linux/arm64
           push: true
@@ -132,7 +132,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           builder: ${{ steps.buildx.outputs.name }}
-          context: "{{defaultContext}}:jetsonbase-notebook/tf-notebook"
+          context: "{{defaultContext}}:jetson32base-notebook/tf-notebook"
           file: dockerfile
           platforms: linux/arm64
           push: true

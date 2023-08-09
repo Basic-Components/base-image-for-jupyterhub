@@ -65,10 +65,14 @@
 # import nativeauthenticator
 import os
 import copy
-from pathlib import Path
-from docker.types import DriverConfig, DeviceRequest
 import logging
+from pathlib import Path
 from typing import TypedDict, List
+
+from docker.types import DriverConfig, DeviceRequest
+from jupyterhub.spawner import Spawner
+
+
 # 创建 logger 对象
 logger = logging.getLogger('pre_spawn_hook_logger')
 logger.setLevel(logging.DEBUG)
@@ -412,7 +416,7 @@ if constraint_gpus:
             raise AttributeError("SPAWNER_CONSTRAINT_WITH_GPUS syntax error")
 
 
-def spawner_start_hook(spawner) -> None:
+def spawner_start_hook(spawner: Spawner) -> None:
     username = spawner.user.name
     logger.info(f'spawner_start_hook for {username} start')
     user_name_suffix = username.split("-")[-1]
