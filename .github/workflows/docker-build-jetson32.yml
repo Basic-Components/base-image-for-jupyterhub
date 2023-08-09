@@ -1,4 +1,4 @@
-name: "build images for jetson based notebook"
+name: "build images for jetson r32 based notebook"
 
 on:
   workflow_dispatch:
