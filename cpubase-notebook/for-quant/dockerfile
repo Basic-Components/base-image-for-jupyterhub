@@ -22,8 +22,8 @@ RUN rm -rf /tmp
 # 安装需要的库
 USER ${NB_UID}
 WORKDIR "${HOME}"
-COPY ./${TARGETPLATFORM}/py_mini_racer-0.6.0-py3.whl py_mini_racer-0.6.0-py3-none-any.whl
-RUN pip install py_mini_racer-0.6.0-py3.whl
-RUN rm -f py_mini_racer-0.6.0-py3.whl
+COPY ./${TARGETPLATFORM}/py_mini_racer-0.6.0-py3-none-any.whl py_mini_racer-0.6.0-py3-none-any.whl
+RUN pip install py_mini_racer-0.6.0-py3-none-any.whl
+RUN rm -f py_mini_racer-0.6.0-py3-none-any.whl
 RUN pip --no-cache-dir install akshare
 RUN pip --no-cache-dir install TA-Lib
