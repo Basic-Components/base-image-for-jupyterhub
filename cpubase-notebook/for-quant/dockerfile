@@ -2,6 +2,11 @@ ARG NOTEBOOK_VERSION
 FROM --platform=$TARGETPLATFORM hsz1273327/data-analyse-notebook:notebook-$NOTEBOOK_VERSION as base
 # RUN conda install --channel conda-forge ta-lib
 USER root
+RUN apt update -y && apt install -y --no-install-recommends \
+     \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY ta-lib-0.4.0-src.tar.gz /tmp/ta-lib-0.4.0-src.tar.gz
 WORKDIR /tmp
 RUN tar -xzf ta-lib-0.4.0-src.tar.gz
@@ -16,5 +21,8 @@ RUN rm -rf /tmp
 # 安装需要的库
 USER ${NB_UID}
 WORKDIR "${HOME}"
+COPY ./${TARGETPLATFORM}/py_mini_racer-0.6.0-py3.whl py_mini_racer-0.6.0-py3.whl
+RUN pip install py_mini_racer-0.6.0-py3.whl
+RUN rm -f py_mini_racer-0.6.0-py3.whl
 RUN pip --no-cache-dir install akshare
 RUN pip --no-cache-dir install TA-Lib
