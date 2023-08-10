@@ -1,5 +1,6 @@
 ARG NOTEBOOK_VERSION
 FROM --platform=$TARGETPLATFORM hsz1273327/data-analyse-notebook:notebook-$NOTEBOOK_VERSION as base
+ARG TARGETPLATFORM ${TARGETPLATFORM}
 # RUN conda install --channel conda-forge ta-lib
 USER root
 RUN apt update -y && apt install -y --no-install-recommends \
