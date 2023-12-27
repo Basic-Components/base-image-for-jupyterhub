@@ -163,6 +163,15 @@ if spawner_volume_type not in supported_volume_types:
 
 spawner_volume_mkdirpath = os.environ.get("SPAWNER_PERSISTENCE_VOLUME_MKDIRPATH", "/jupyterhub_data")
 
+# 权限问题
+c.DockerSpawner.extra_create_kwargs = {'user': 'root'}
+c.DockerSpawner.environment = {
+    "CHOWN_HOME": "yes",
+    "CHOWN_EXTRA": "/home/jovyan",
+    "CHOWN_HOME_OPTS": "-R",
+    "NB_UID": 1000,
+    "NB_GID": 1000,
+}
 
 class DriverConfigOptionsDict(TypedDict):
     type: str
